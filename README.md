@@ -46,3 +46,6 @@ Hardware changes (immediate and planned):
     - [Protocol](https://github.com/maxosprojects/open-dobot/wiki/Protocol-Design)
     - Firmware (follow up on [wiki](https://github.com/maxosprojects/open-dobot/wiki))
 2. Implementation
+
+###Application software
+There are plenty of open-source projects implementing forward and inverse kinematics, trajectory planning and execution that could be used with the arm. One example would be http://moveit.ros.org . A simple camera would bring perception, which increases the number of arm applications by orders of magnitude.
