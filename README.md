@@ -1,3 +1,5 @@
+Have a look at the branches. There is a first cut available now!
+
 #What is open-dobot
 This project is intended as a completely open and free (MIT License) alternative to proprietary, unreliable and inflexible firmware for Dobot robotic arm (original Kickstarter campaign https://www.kickstarter.com/projects/dobot/dobot-robotic-arm-for-everyone-arduino-and-open-so/description).
 
