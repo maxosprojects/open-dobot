@@ -26,7 +26,10 @@ class Dobot {
   private int crc;
   // Timeout in ms.
   private int timeout = 100;
-      
+
+  protected Dobot() {
+  }
+
   Dobot(String comport, int rate) {
     this.comport = comport;
     this.rate = rate;
@@ -51,7 +54,7 @@ class Dobot {
   }
 
   private void crc_update(int data) {
-    this.crc = this.crc ^ (data << 8);
+    this.crc = this.crc ^ ((data&0xFF) << 8);
     for (int i = 0; i < 8; i++) {
       if ((this.crc&0x8000) == 0x8000) {
         this.crc = ((this.crc << 1) ^ 0x1021);
@@ -65,6 +68,8 @@ class Dobot {
     int start = millis();
     while (millis() - start < this.timeout) {
       int data = this.port.read();
+      // Without yielding UI is blocked and Serial is not updating buffer => always error.
+      Thread.yield();
       if (data > -1) {
         return data;
       }
@@ -385,6 +390,38 @@ class Dobot {
     //self._lock.release()
   }
 }
+
+
+class FakeDobot extends Dobot {
+
+  FakeDobot(String comport, int rate) {
+  }
+
+  public void open(PApplet parent) {
+  }
+
+  public void open(PApplet parent, Integer timeout) {
+  }
+
+  public void close() {
+  }
+
+  public IntTuple steps(int j1, int j2, int j3, int ticks, int j1dir, int j2dir, int j3dir, boolean deferred) {
+    return new IntTuple(1, 1);
+  }
+
+  public boolean ExecQueue() {
+    return true;
+  }
+
+  public IntTuple isReady() {
+    return new IntTuple(1, 0x40);
+  }
+
+  public void reset() {
+  }
+}
+
 
 //void dobotSerialBegin()
 //{

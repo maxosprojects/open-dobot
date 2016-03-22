@@ -61,7 +61,7 @@ void setup() {
   TCCR3B = 0;
   TCNT3  = 0;
 
-  OCR3A = 8;                // Roughly 3.7kHz
+  OCR3A = 8;                // compare match register 16MHz/256/(frequency) - around 3.47kHz
   TCCR3B |= (1 << WGM32);   // CTC mode
   TCCR3B |= (1 << CS32);    // 256 prescaler 
   TIMSK3 |= (1 << OCIE3A);  // enable timer compare interrupt
@@ -228,7 +228,7 @@ ISR(TIMER3_COMPA_vect) {
   volatile Command* tail = cmdQueue.peekTailIsr();
   // If last executed command finished more than 30 ms ago and starting (ticks==0) a defered 
   // command (tail->defer==1) and global defer==1, then wait for global defer==0.
-  if ((currentTime - lastTimeExecuted) > 30 && ticks == 0 && tail->control.deferred && defer) {
+  if (ticks == 0 && tail->control.deferred && defer && (currentTime - lastTimeExecuted) > 30) {
     return;
   }
   lastTimeExecuted = currentTime;

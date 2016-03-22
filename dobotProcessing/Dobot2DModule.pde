@@ -83,12 +83,12 @@ class Dobot2DModule
     vertex(171, 18);
     vertex(171, 0);
     endShape(CLOSE);
-    arc(157.5, 7.25, 34.5, 34.5, radians(-155), radians(40), OPEN);//this arc position need to be accuratly
+    arc(157.5, 7.25, 34.5, 34.5, radians(-155), radians(40), OPEN);//this arc position need to be accurately
     fill(background);
     ellipse(160, 0, 10, 10);
     rect(35.5, 15, 92, 14, 7);
 
-    pushMatrix(); //the word is not the right position, this step is to print the logo "dobot" correctly; 
+    pushMatrix(); //the word is not in the right position, this step is to display the logo "dobot" correctly; 
     scale(1, -1);
 
     fill(0, 102, 153);
@@ -271,7 +271,7 @@ class Dobot2DModule
   public void convertToFrontQuadOrigin()
   {
     resetMatrix();
-    translate(width * frontOriginTrainlateX, height * (1-frontOriginTrainlateY));  //translate and scale for axis be left-bottom;
+    translate(width * frontOriginTranslateX, height * (1-frontOriginTranslateY));  //translate and scale for axis be left-bottom;
     scale(frontScaleRatio, -frontScaleRatio);
   }
   public void convertToTopQuadOrigin()
