@@ -91,6 +91,121 @@ volatile unsigned char seqMove2[19] = {
 0x5a // end signature
 };
 
+// 50Hz on motor1 only. Response: 0x80 (1 step)
+volatile unsigned char seqMove3[19] = {
+0xa5, // start signature
+0xf8, // motor1 block start
+0x85,
+0xe0,
+0x0,
+0x2,  // motor2 block start
+0x42,
+0xf0,
+0x0,
+0x2,  // motor3 block start
+0x42,
+0xf0,
+0x0,
+0xe0, // direction
+0x2f,
+0x80,
+0x2f,
+0x80,
+0x5a // end signature
+};
+
+// 250Hz on motor1 only. Response: 0x90 (5 steps)
+volatile unsigned char seqMove4[19] = {
+0xa5, // start signature
+0xf9, // motor1 block start
+0x61,
+0x80,
+0x0,
+0x2,  // motor2 block start
+0x42,
+0xf0,
+0x0,
+0x2,  // motor3 block start
+0x42,
+0xf0,
+0x0,
+0xe0, // direction
+0x2f,
+0x80,
+0x2f,
+0x80,
+0x5a // end signature
+};
+
+// 400Hz on motor1 only. Response: 0xf0 (8 steps)
+volatile unsigned char seqMove5[19] = {
+0xa5, // start signature
+0xc4, // motor1 block start
+0x2f,
+0x0,
+0x0,
+0x2,  // motor2 block start
+0x42,
+0xf0,
+0x0,
+0x2,  // motor3 block start
+0x42,
+0xf0,
+0x0,
+0xe0, // direction
+0x2f,
+0x80,
+0x2f,
+0x80,
+0x5a // end signature
+};
+
+// 600Hz on motor1 only. Response: 0xe8 (12 steps)
+volatile unsigned char seqMove6[19] = {
+0xa5, // start signature
+0x83, // motor1 block start
+0x45,
+0x0,
+0xd5,
+0x2,  // motor2 block start
+0x42,
+0xf0,
+0x0,
+0x2,  // motor3 block start
+0x42,
+0xf0,
+0x0,
+0xe0, // direction
+0x2f,
+0x80,
+0x2f,
+0x80,
+0x5a // end signature
+};
+
+// 600Hz on motor1 only. Response: 0xe8 (12 steps)
+volatile unsigned char seqMove7[19] = {
+0xa5, // start signature
+0x88, // motor1 block start
+0x5e,
+0x0,
+0xd5,
+0x2,  // motor2 block start
+0x42,
+0xf0,
+0x0,
+0x2,  // motor3 block start
+0x42,
+0xf0,
+0x0,
+0xe0, // direction
+0x2f,
+0x80,
+0x2f,
+0x80,
+0x5a // end signature
+};
+
 void setup (void) {
   // have to send on master in, *slave out*
   SPI_DDR = (1<<SPI_MISO);
@@ -120,7 +235,7 @@ int main() {
       FPGA_COMMAND_PORT |= (1<<FPGA_COMMAND_PIN);
       while(!(SPSR & (1<<SPIF) ));
       for (i = 0; i < 19; i++) {
-        SPDR = seqMove2[i];
+        SPDR = seqMove7[i];
         while(!(SPSR & (1<<SPIF) ));
         data = SPDR;
       }
