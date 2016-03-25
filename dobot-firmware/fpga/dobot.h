@@ -11,18 +11,19 @@ typedef unsigned long ulong;
 
 typedef void(*funcPtrs)(void);
 
-typedef struct {
-  byte j1dir : 1;
-  byte j2dir : 1;
-  byte j3dir : 1;
-  // byte deferred : 1;
-} ControlByte;
+// typedef struct {
+//   byte j1dir : 1;
+//   byte j2dir : 1;
+//   byte j3dir : 1;
+//   // byte deferred : 1;
+// } ControlByte;
 
 typedef struct {
   ulong j1;
   ulong j2;
   ulong j3;
-  ControlByte control;
+  // ControlByte control;
+  byte control;
 } Command;
 
 void cmdReady();
@@ -70,15 +71,15 @@ class CommandQueue {
       size = newSize;
     };
 
-    byte appendHead(ulong *newJ1, ulong *newJ2, ulong *newJ3, 
-        byte control) {
+    byte appendHead(ulong *newJ1, ulong *newJ2, ulong *newJ3, byte *control) {
       if (!isFull()) {
         queue[head].j1 = *newJ1;
         queue[head].j2 = *newJ2;
         queue[head].j3 = *newJ3;
-        queue[head].control.j1dir = (control >> 1) & 0x01;
-        queue[head].control.j2dir = (control >> 2) & 0x01;
-        queue[head].control.j3dir = (control >> 3) & 0x01;
+        queue[head].control = *control;
+        // queue[head].control.j1dir = (control >> 1) & 0x01;
+        // queue[head].control.j2dir = (control >> 2) & 0x01;
+        // queue[head].control.j3dir = (control >> 3) & 0x01;
         head++;
         if (head >= size) {
           head = 0;

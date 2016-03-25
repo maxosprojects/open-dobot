@@ -17,7 +17,7 @@ class Dobot:
 		self._port = None
 		self._crc = 0xffff
 
-	def Open(self, timeout=0.1):
+	def Open(self, timeout=0.02):
 		self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.01)
 
 	def Close(self):
@@ -73,13 +73,15 @@ class Dobot:
 		trys = _max_trys
 		while trys:
 			self._port.flushInput()
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			val1 = self._readbyte()
 			if val1[0]:
 				crc = self._readchecksumword()
 				if crc[0]:
 					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						raise Exception('crc differs', self._crc, crc)
+						# raise Exception('crc differs', self._crc, crc)
 						return (0,0)
 					return (1,val1[1])
 			trys -= 1
@@ -90,7 +92,9 @@ class Dobot:
 		trys = _max_trys
 		while trys:
 			self._port.flushInput()
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			val1 = self._readlong()
 			if val1[0]:
 				crc = self._readchecksumword()
@@ -105,7 +109,9 @@ class Dobot:
 		trys = _max_trys
 		while trys:
 			self._port.flushInput()
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			val1 = self._readslong()
 			if val1[0]:
 				val2 = self._readbyte()
@@ -143,12 +149,15 @@ class Dobot:
 		self._crc_clear()
 		self._crc_update(command)
 		self._port.write(chr(command))
-		return
+		data = self._port.read(1)
+		return len(data) == 1 and ord(data) == 1
 
 	def _write0(self, cmd):
 		trys = _max_trys
 		while trys:
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			if self._writechecksum():
 				return True
 			trys = trys - 1
@@ -157,7 +166,9 @@ class Dobot:
 	def _write1(self, cmd, val):
 		trys = _max_trys
 		while trys:
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			self._writebyte(val)
 			if self._writechecksum():
 				return True
@@ -167,7 +178,9 @@ class Dobot:
 	def _write2(self, cmd, val):
 		trys = _max_trys
 		while trys:
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			self._writeword(val)
 			if self._writechecksum():
 				return True
@@ -177,7 +190,9 @@ class Dobot:
 	def _write4(self, cmd, val):
 		trys = _max_trys
 		while trys:
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			self._writelong(val)
 			if self._writechecksum():
 				return True
@@ -187,7 +202,9 @@ class Dobot:
 	def _write14(self, cmd, val1, val2):
 		trys = _max_trys
 		while trys:
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			self._writebyte(val1)
 			self._writelong(val2)
 			if self._writechecksum():
@@ -198,7 +215,9 @@ class Dobot:
 	def _write11121read1(self, cmd, val1, val2, val3, val4, val5):
 		trys = _max_trys
 		while trys:
-			self._sendcommand(cmd)
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
 			self._writebyte(val1)
 			self._writebyte(val2)
 			self._writebyte(val3)
@@ -212,13 +231,37 @@ class Dobot:
 				crc = self._readchecksumword()
 				if crc[0]:
 					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						raise Exception('crc differs', self._crc, crc)
+						# raise Exception('crc differs', self._crc, crc)
 						return (0,0)
 					return (1,ret[1])
 			trys = trys - 1
 		return (0,0)
 
-	def Steps(self, j1, j2, j3, ticks, j1dir, j2dir, j3dir, deferred):
+	def _waitAndWrite14441read1(self, cmd, val1, val2, val3, val4):
+		trys = _max_trys
+		while trys:
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
+			self._writelong(val1)
+			self._writelong(val2)
+			self._writelong(val3)
+			self._writebyte(val4)
+			self._writeword(self._crc&0xFFFF)
+			self._port.flushInput()
+			self._crc_clear()
+			ret = self._readbyte()
+			if ret[0]:
+				crc = self._readchecksumword()
+				if crc[0]:
+					if self._crc&0xFFFF!=crc[1]&0xFFFF:
+						# raise Exception('crc differs', self._crc, crc)
+						return (0,0)
+					return (1,ret[1])
+			trys = trys - 1
+		return (0,0)
+
+	def Steps(self, j1, j2, j3, j1dir, j2dir, j3dir, deferred=False):
 		'''
 		Adds a command to the controller queue.
 		Controller runs a timer that counts ticks (around 3.47kHz). "Steps" command specifies
@@ -247,10 +290,11 @@ class Dobot:
 		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
 		'''
 		control = ((j1dir & 0x01) << 1) | ((j2dir & 0x01) << 2) | ((j3dir & 0x01) << 3);
-		if deferred:
-			control |= 0x01
+		# if deferred:
+		# 	control |= 0x01
 		self._lock.acquire()
-		result = self._write11121read1(CMD_STEPS, j1, j2, j3, ticks, control)
+		# result = self._write11121read1(CMD_STEPS, j1, j2, j3, ticks, control)
+		result = self._waitAndWrite14441read1(CMD_STEPS, j1, j2, j3, control)
 		self._lock.release()
 		return result
 

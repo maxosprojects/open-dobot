@@ -17,6 +17,10 @@
 #define FPGA_COMMAND_PIN PORTL7
 #define FPGA_COMMAND_ACCELS_PIN PORTL0
 
+#define TEST_PORT PORTD
+#define TEST_DDR DDRD
+#define TEST_PIN PORTD2
+
 #define CMD_QUEUE_SIZE     200
 
 CommandQueue cmdQueue(CMD_QUEUE_SIZE);
@@ -35,6 +39,13 @@ byte crc[2];
 // ulong lastTimeExecuted = 0;
 byte defer = 1;
 
+void testOn() {
+  TEST_PORT |= (1<<TEST_PIN);
+}
+void testOff() {
+  TEST_PORT &= ~(1<<TEST_PIN);
+}
+
 void serialInit(void) {
   UBRR0H = UBRRH_VALUE;
   UBRR0L = UBRRL_VALUE;
@@ -50,29 +61,35 @@ void serialInit(void) {
 }
 
 void serialWrite(byte c) {
+  loop_until_bit_is_set(UCSR0A, UDRE0);
   UDR0 = c;
-  loop_until_bit_is_set(UCSR0A, TXC0); /* Wait until transmission ready. */
 }
 
 void serialWrite(byte data[], byte num) {
   for (byte i = 0; i < num; i++) {
+    loop_until_bit_is_set(UCSR0A, UDRE0);
     UDR0 = data[i];
-    loop_until_bit_is_set(UCSR0A, TXC0); /* Wait until transmission ready. */
   }
 }
 
-// Returns number of bytes read.
+// Returns number of bytes read or 0 if timeout occurred.
+// Timeout: 1000 increments ~ 600us, so allow about 9ms interbyte and 18ms overall.
 byte serialReadNum(byte data[], byte num) {
-  unsigned int i = 0;
+  unsigned int interByteTimeout = 0;
+  unsigned int transactionTimeout = 0;
   byte cnt = 0;
+  // testOn();
   while (cnt < num) {
     // Wait until data exists.
     while (!(UCSR0A & (1<<RXC0))) {
-      if (i > 1000) {
+      interByteTimeout++;
+      transactionTimeout++;
+      if (interByteTimeout > 15000 || transactionTimeout > 30000) {
+        // testOff();
         return 0;
       }
     }
-    i = 0;
+    interByteTimeout = 0;
     data[cnt++] = UDR0;
   }
   return cnt;
@@ -92,6 +109,8 @@ void setup() {
 
   FPGA_COMMAND_PORT &= (0<<FPGA_COMMAND_PIN);
   FPGA_COMMAND_PORT &= (0<<FPGA_COMMAND_ACCELS_PIN);
+
+  // TEST_DDR = (1<<TEST_PIN);
 
   // turn on SPI in slave mode
   // CPOL=0, CPHA=1 - Trailing (Falling) Edge
@@ -124,6 +143,7 @@ void processCommand() {
 
 // CMD: returns magic number to indicate that the controller is alive.
 void cmdReady() {
+  serialWrite(1);
   crcCcitt(cmd, 1);
   // Return magic number.
   cmd[0] = 0x40;
@@ -138,7 +158,7 @@ void cmdSteps() {
   }
   if (checkCrc(cmd, 14)) {
     resetCrc();
-    if (cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[2], (ulong*) &cmd[3], cmd[6])) {
+    if (cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13])) {
       cmd[0] = 1;
       write1(cmd);
     } else {
@@ -202,7 +222,7 @@ void resetCrc() {
 }
 
 void crcCcitt(byte data[], int len) {
-  crcCcitt(data, len, false);
+  crcCcitt(data, len, 0);
 }
 
 void crcCcitt(byte data[], int len, byte keepSeed) {
