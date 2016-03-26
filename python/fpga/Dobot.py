@@ -153,8 +153,6 @@ class Dobot:
 		data = self._port.read(1)
 		return len(data) == 1 and ord(data) == 1
 
-
-
 	# def _write0(self, cmd):
 	# 	trys = _max_trys
 	# 	while trys:
@@ -246,54 +244,91 @@ class Dobot:
 	# 		trys = trys - 1
 	# 	return False
 
-	def _write11121read1(self, cmd, val1, val2, val3, val4, val5):
-		trys = _max_trys
-		while trys:
+	def _write_read(self, cmd, write_commands):
+		tries = _max_trys
+		while tries:
 			if not self._sendcommand(cmd):
-				trys = trys - 1
+				tries -= 1
 				continue
-			self._writebyte(val1)
-			self._writebyte(val2)
-			self._writebyte(val3)
-			self._writeword(val4)
-			self._writebyte(val5)
-			self._writeword(self._crc&0xFFFF)
+
+			for c in write_commands:
+				c[0](c[1])
+
+			self._writeword(self._crc & 0xFFFF)
 			self._port.flushInput()
 			self._crc_clear()
 			ret = self._readbyte()
 			if ret[0]:
 				crc = self._readchecksumword()
 				if crc[0]:
-					if self._crc&0xFFFF!=crc[1]&0xFFFF:
+					if self._crc & 0xFFFF != crc[1] & 0xFFFF:
 						# raise Exception('crc differs', self._crc, crc)
-						return (0,0)
-					return (1,ret[1])
-			trys = trys - 1
-		return (0,0)
+						return (0, 0)
+					return (1, ret[1])
+			tries -= 1
+		return (0, 0)
+
+	def _write11121read1(self, cmd, val1, val2, val3, val4, val5):
+		return self._write_read(cmd, [(self._writebyte, val1),
+									(self._writebyte, val2)
+									(self._writebyte, val3)
+									(self._writeword, val4),
+									(self._writebyte, val5)])
+
+	# def _write11121read1(self, cmd, val1, val2, val3, val4, val5):
+		# trys = _max_trys
+		# while trys:
+		# 	if not self._sendcommand(cmd):
+		# 		trys = trys - 1
+		# 		continue
+		# 	self._writebyte(val1)
+		# 	self._writebyte(val2)
+		# 	self._writebyte(val3)
+		# 	self._writeword(val4)
+		# 	self._writebyte(val5)
+		# 	self._writeword(self._crc&0xFFFF)
+		# 	self._port.flushInput()
+		# 	self._crc_clear()
+		# 	ret = self._readbyte()
+		# 	if ret[0]:
+		# 		crc = self._readchecksumword()
+		# 		if crc[0]:
+		# 			if self._crc&0xFFFF!=crc[1]&0xFFFF:
+		# 				# raise Exception('crc differs', self._crc, crc)
+		# 				return (0,0)
+		# 			return (1,ret[1])
+		# 	trys = trys - 1
+		# return (0,0)
 
 	def _waitAndWrite14441read1(self, cmd, val1, val2, val3, val4):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writelong(val1)
-			self._writelong(val2)
-			self._writelong(val3)
-			self._writebyte(val4)
-			self._writeword(self._crc&0xFFFF)
-			self._port.flushInput()
-			self._crc_clear()
-			ret = self._readbyte()
-			if ret[0]:
-				crc = self._readchecksumword()
-				if crc[0]:
-					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						# raise Exception('crc differs', self._crc, crc)
-						return (0,0)
-					return (1,ret[1])
-			trys = trys - 1
-		return (0,0)
+		return self._write_read(cmd, [(self._writelong, val1),
+									(self._writelong, val2)
+									(self._writelong, val3)
+									(self._writebyte, val4)])
+
+	#def _waitAndWrite14441read1(self, cmd, val1, val2, val3, val4):
+		# trys = _max_trysb
+		# while trys:
+		# 	if not self._sendcommand(cmd):
+		# 		trys = trys - 1
+		# 		continue
+		# 	self._writelong(val1)
+		# 	self._writelong(val2)
+		# 	self._writelong(val3)
+		# 	self._writebyte(val4)
+		# 	self._writeword(self._crc&0xFFFF)
+		# 	self._port.flushInput()
+		# 	self._crc_clear()
+		# 	ret = self._readbyte()
+		# 	if ret[0]:
+		# 		crc = self._readchecksumword()
+		# 		if crc[0]:
+		# 			if self._crc&0xFFFF!=crc[1]&0xFFFF:
+		# 				# raise Exception('crc differs', self._crc, crc)
+		# 				return (0,0)
+		# 			return (1,ret[1])
+		# 	trys = trys - 1
+		# return (0,0)
 
 	def Steps(self, j1, j2, j3, j1dir, j2dir, j3dir, deferred=False):
 		'''
