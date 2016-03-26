@@ -153,65 +153,98 @@ class Dobot:
 		data = self._port.read(1)
 		return len(data) == 1 and ord(data) == 1
 
-	def _write0(self, cmd):
+
+
+	# def _write0(self, cmd):
+	# 	trys = _max_trys
+	# 	while trys:
+	# 		if not self._sendcommand(cmd):
+	# 			trys = trys - 1
+	# 			continue
+	# 		if self._writechecksum():
+	# 			return True
+	# 		trys = trys - 1
+	# 	return False
+
+	def _write(self, cmd, write_commands=list()):
 		trys = _max_trys
 		while trys:
 			if not self._sendcommand(cmd):
-				trys = trys - 1
+				trys -= 1
 				continue
+
+			for c in write_commands:
+				c[0](c[1])
+
+			# self._writebyte(val)
 			if self._writechecksum():
 				return True
-			trys = trys - 1
+			trys -= 1
 		return False
+
+	def _write0(self, cmd):
+		return self._write(cmd)
 
 	def _write1(self, cmd, val):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writebyte(val)
-			if self._writechecksum():
-				return True
-			trys = trys - 1
-		return False
+		return self._write(cmd, [(self._writebyte, val)])
 
 	def _write2(self, cmd, val):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writeword(val)
-			if self._writechecksum():
-				return True
-			trys = trys - 1
-		return False
+		return self._write(cmd, [(self._writeword, val)])
 
 	def _write4(self, cmd, val):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writelong(val)
-			if self._writechecksum():
-				return True
-			trys = trys - 1
-		return False
+		return self._write(cmd, [(self._writelong, val)])
 
 	def _write14(self, cmd, val1, val2):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writebyte(val1)
-			self._writelong(val2)
-			if self._writechecksum():
-				return True
-			trys = trys - 1
-		return False
+		return self._write(cmd, [(self._writebyte, val1), (self._writelong, val2)])
+
+	# def _write1(self, cmd, val):
+	# 	trys = _max_trys
+	# 	while trys:
+	# 		if not self._sendcommand(cmd):
+	# 			trys = trys - 1
+	# 			continue
+	# 		self._writebyte(val)
+	# 		if self._writechecksum():
+	# 			return True
+	# 		trys = trys - 1
+	# 	return False
+
+	# def _write2(self, cmd, val):
+	# 	trys = _max_trys
+	# 	while trys:
+	# 		if not self._sendcommand(cmd):
+	# 			trys = trys - 1
+	# 			continue
+	# 		self._writeword(val)
+	# 		if self._writechecksum():
+	# 			return True
+	# 		trys = trys - 1
+	# 	return False
+
+	# def _write4(self, cmd, val):
+	# 	trys = _max_trys
+	# 	while trys:
+	# 		if not self._sendcommand(cmd):
+	# 			trys = trys - 1
+	# 			continue
+	# 		self._writelong(val)
+	# 		if self._writechecksum():
+	# 			return True
+	# 		trys = trys - 1
+	# 	return False
+
+	# def _write14(self, cmd, val1, val2):
+	# 	trys = _max_trys
+	# 	while trys:
+	# 		if not self._sendcommand(cmd):
+	# 			trys = trys - 1
+	# 			continue
+	# 		self._writebyte(val1)
+	# 		self._writelong(val2)
+	# 		if self._writechecksum():
+	# 			return True
+	# 		trys = trys - 1
+	# 	return False
 
 	def _write11121read1(self, cmd, val1, val2, val3, val4, val5):
 		trys = _max_trys
