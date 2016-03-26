@@ -149,6 +149,7 @@ class Dobot:
 		self._crc_clear()
 		self._crc_update(command)
 		self._port.write(chr(command))
+		self._port.flush()
 		data = self._port.read(1)
 		return len(data) == 1 and ord(data) == 1
 
@@ -289,7 +290,7 @@ class Dobot:
 		received (0 - yes, 1 - timed out), and the second element tells whether the command was added
 		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
 		'''
-		control = ((j1dir & 0x01) << 1) | ((j2dir & 0x01) << 2) | ((j3dir & 0x01) << 3);
+		control = ((j1dir & 0x01) << 7) | ((j2dir & 0x01) << 6) | ((j3dir & 0x01) << 5);
 		# if deferred:
 		# 	control |= 0x01
 		self._lock.acquire()

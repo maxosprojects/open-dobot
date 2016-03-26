@@ -325,11 +325,11 @@ class Dobot {
   }
 
   //Adds a command to the controller queue.
-  //Controller runs a timer that counts ticks (approx 3.7kHz). "Steps" command specifies
+  //Controller runs a timer that counts ticks (around 3.47kHz). "Steps" command specifies
   //a scaler for each joint (joint1 - base, and so on, according to the official docs).
   //On every "ticks modulo scaler == 0" the STEP pin (on the stepper driver) is toggled.
-  //So, if scaler=1, then the STEP pin is toggled at approx 3.7kHz frequency. If scaler
-  //is 37, then STEP pin is toggled at approx 100Hz.
+  //So, if scaler=1, then the STEP pin is toggled at around 3.47kHz frequency. If scaler
+  //is 10, then STEP pin is toggled at around 370.
   
   //The "Steps" command also specifies the number of ticks to run the command for, the
   //state for DIR pin (on the stepper driver) to indicate which direction the motor will
