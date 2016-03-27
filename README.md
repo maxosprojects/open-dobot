@@ -22,7 +22,7 @@ The fact that the Arduino board does not actually control the arm but delegates 
 #Prerequisites
 ~~The simplest way to overcome the above problems and bring full control over the arm seems to be by replacing the top board (that contains FPGA) with a cheap (around $10) RAMPS1.4 board. By doing so we get direct control of the stepper drivers from Arduino and the rest becomes a matter of creating a simple firmware.~~
 
-With the latest advancements in figuring out the FPGA on the top board firmware/fpga version 0.2.0 requires NO changes to hardware and is ready to replace original firmware by simply uploading it with dobot-tools.
+**With the latest advancements in figuring out the FPGA on the top board dobot-firmware/fpga version 0.2.0 requires NO changes to hardware and is ready to replace original firmware by simply uploading it with dobot-tools https://github.com/maxosprojects/open-dobot/releases/tag/0.2.0**
 
 ---
 
@@ -43,7 +43,7 @@ Don't mind the soldering, it may not be required at all.~~
 3. Planned - connect end effectors (mechanical gripper, vacuum gripper, laser, etc.)
 4. Planned - connect the accelerometers. This will enable firmware to read the current (initial or at any time at rest) arm configuration~~
 
-Firmware/fpga version 0.2.0 requires NO changes to hardware and is ready to replace original firmware by simply uploading it with dobot-tools.
+**dobot-firmware/fpga version 0.2.0 requires NO changes to hardware and is ready to replace original firmware by simply uploading it with dobot-tools https://github.com/maxosprojects/open-dobot/releases/tag/0.2.0**
 
 ###Firmware
 1. Design:
