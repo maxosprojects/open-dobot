@@ -24,7 +24,7 @@ print dobot.GetAccelerometers()
 # iterations - how many commands will be sent. There are 50 commands/second dobot
 # executes (50Hz). So if 50 commands are sent dobot will execute for a second.
 freq = {
-	0: (0x00000000, 2),
+	0: (0x0242f000, 2),
 	50: (0xf885e000, 5),
 	250: (0xf9618000, 10),
 	400: (0xc42f0000, 10),
