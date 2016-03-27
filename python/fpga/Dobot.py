@@ -8,6 +8,8 @@ _max_trys = 3
 CMD_READY = 0
 CMD_STEPS = 1
 CMD_EXEC_QUEUE = 2
+CMD_GET_ACCELS = 3
+CMD_SWITCH_TO_ACCEL_REPORT_MODE = 4
 
 class Dobot:
 	def __init__(self, comport, rate):
@@ -17,7 +19,7 @@ class Dobot:
 		self._port = None
 		self._crc = 0xffff
 
-	def Open(self, timeout=0.02):
+	def Open(self, timeout=0.025):
 		self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.01)
 
 	def Close(self):
@@ -47,6 +49,14 @@ class Dobot:
 			val = ord(data)
 			self._crc_update(val)
 			return (1,val)	
+		return (0,0)
+
+	def _readword(self):
+		val1 = self._readbyte()
+		if val1[0]:
+			val2 = self._readbyte()
+			if val2[0]:
+				return (1,val1[1]<<8|val2[1])
 		return (0,0)
 
 	def _readlong(self):
@@ -87,6 +97,27 @@ class Dobot:
 			trys -= 1
 		# raise Exception("couldn't get response in time for", _max_trys, 'times')
 		return (0,0)
+
+	def _read22(self, cmd):
+		trys = _max_trys
+		while trys:
+			self._port.flushInput()
+			if not self._sendcommand(cmd):
+				trys = trys - 1
+				continue
+			val1 = self._readword()
+			if val1[0]:
+				val2 = self._readword()
+				if val2[0]:
+					crc = self._readchecksumword()
+					if crc[0]:
+						if self._crc&0xFFFF!=crc[1]&0xFFFF:
+							# raise Exception('crc differs', self._crc, crc)
+							return (0,0,0)
+						return (1,val1[1],val2[1])
+			trys -= 1
+		# raise Exception("couldn't get response in time for", _max_trys, 'times')
+		return (0,0,0)
 
 	def _read4(self, cmd):
 		trys = _max_trys
@@ -215,7 +246,7 @@ class Dobot:
 									(self._writeword, val4),
 									(self._writebyte, val5)])
 
-	def _waitAndWrite14441read1(self, cmd, val1, val2, val3, val4):
+	def _write14441read1(self, cmd, val1, val2, val3, val4):
 		return self._write_read(cmd, [(self._writelong, val1),
 									(self._writelong, val2),
 									(self._writelong, val3),
@@ -240,7 +271,7 @@ class Dobot:
 		# if deferred:
 		# 	control |= 0x01
 		self._lock.acquire()
-		result = self._waitAndWrite14441read1(CMD_STEPS, j1, j2, j3, control)
+		result = self._write14441read1(CMD_STEPS, j1, j2, j3, control)
 		self._lock.release()
 		return result
 
@@ -253,6 +284,36 @@ class Dobot:
 		self._lock.release()
 		return result
 
+	def GetAccelerometers(self):
+		'''
+		Returns data aquired from accelerometers at power on.
+		There are 17 reads of each accelerometer that the firmware does and
+		then averages the result before returning it here.
+		'''
+		self._lock.acquire()
+		result = self._read22(CMD_GET_ACCELS)
+		self._lock.release()
+		return result
+
+	def _SwitchToAccelerometerReportMode(self):
+		'''
+		Apparently the following won't work because of the way dobot was desgined
+		and limitations of AVR - cannot switch SPI from Slave to Master back.
+		So, as a workaround, just hold the "Sensor Calibration" button and start your
+		app. Arduino is reset on serial port connection and it takes about 2 seconds
+		for it to start. After that you can release the button. That switches dobot to
+		accelerometer reporting mode. To move the arm turn off the power switch.
+
+		This function is left just in case a proper fix comes up.
+
+		Switches dobot to accelerometer report mode.
+		Dobot must be reset to enter normal mode after issuing this command.
+		'''
+		self._lock.acquire()
+		result = self._write_read(CMD_SWITCH_TO_ACCEL_REPORT_MODE, [])
+		self._lock.release()
+		return result
+
 	def isReady(self):
 		'''
 		Checks whether the controller is up and running.
@@ -262,7 +323,7 @@ class Dobot:
 		self._lock.release()
 		# Check for magic number.
 		# return [result[0], result[1] == 0x40]
-		return [result[0], result[1]]
+		return result
 
 	def reset(self):
 #		self._lock.acquire()

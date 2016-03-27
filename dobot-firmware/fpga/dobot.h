@@ -2,11 +2,13 @@
 #define DOBOT_H_INCLUDED
 
 #include <avr/io.h>
+#include <util/delay.h>
 #include <stdlib.h>
 
 #define NOP __asm__ __volatile__ ("nop\n\t")
 
 typedef unsigned char byte;
+typedef unsigned int uint;
 typedef unsigned long ulong;
 
 typedef void(*funcPtrs)(void);
@@ -29,14 +31,22 @@ typedef struct {
 void cmdReady();
 void cmdSteps();
 void cmdExecQueue();
+void cmdGetAccels();
+void cmdSwitchToAccelReportMode();
 void crcCcitt(byte data[], int len);
 void crcCcitt(byte data[], int len, byte keepSeed);
-void write1(byte data[]);
 byte read13(byte data[]);
+void write1(byte data[]);
+byte write22(byte data[], uint* val1, uint* val2);
+byte write4(byte data[]);
 byte checkCrc(byte data[], int len);
 byte confirmCrc(byte data[], int len);
 void resetCrc();
-
+void serialInit(void);
+void serialWrite(byte c);
+void serialWrite(byte data[], byte num);
+byte serialReadNum(byte data[], byte num);
+uint accelRead(unsigned char pin);
 
 // Rest
 volatile byte sequenceRest[19] = {

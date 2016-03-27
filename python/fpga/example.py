@@ -4,7 +4,7 @@ import math
 
 dobot = Dobot('/dev/tty.usbmodem1421', 115200)
 dobot.Open()
-time.sleep(1)
+time.sleep(2)
 successes = 0
 i = 0
 while True:
@@ -17,6 +17,8 @@ while True:
 	if i > 100:
 		raise Exception('Comm problem')
 
+print dobot.GetAccelerometers()
+
 # frequency: (code, iterations)
 # where frequency is not used, the code is some magic code yet to be decoded, 
 # iterations - how many commands will be sent. There are 50 commands/second dobot
@@ -26,20 +28,26 @@ freq = {
 	50: (0xf885e000, 5),
 	250: (0xf9618000, 10),
 	400: (0xc42f0000, 10),
-	600: (0x834500d5, 10)
+	600: (0x834500d5, 10),
+	800: (0x885e0000, 10),
+	950: (0x53660053, 10),
+	1150: (0x572a0084, 10),
+	1300: (0xb8d200a3, 10),
+	1450: (0x1ac20086, 10)
 }
 
-def execute(keys, direction):
-	for key in keys:
-		tup = freq[key]
-		for i in range(0, tup[1]):
-			dobot.Steps(tup[0], 0, 0, direction, 0, 0)
+def execute(keys1, keys2, direction1, direction2):
+	for key1, key2 in zip(keys1, keys2):
+		code1 = freq[key1]
+		code2 = freq[key2]
+		for i in range(0, 5):
+			dobot.Steps(code1[0], code2[0], 0, direction1, direction2, 0)
 
-dir = 0
+increasing = sorted(freq.keys())
+decreasing = sorted(freq.keys(), reverse=True)
+execute(increasing, [], 0, 0)
 while True:
-	execute(sorted(freq.keys()), dir)
-	execute(sorted(freq.keys(), reverse=True), dir)
-	if dir:
-		dir = 0
-	else:
-		dir = 1
+	execute(decreasing, increasing, 0, 0)
+	execute(increasing, decreasing, 1, 0)
+	execute(decreasing, increasing, 1, 1)
+	execute(increasing, decreasing, 0, 1)
