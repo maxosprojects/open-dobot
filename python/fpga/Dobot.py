@@ -241,8 +241,8 @@ class Dobot:
 
 	def _write11121read1(self, cmd, val1, val2, val3, val4, val5):
 		return self._write_read(cmd, [(self._writebyte, val1),
-									(self._writebyte, val2)
-									(self._writebyte, val3)
+									(self._writebyte, val2),
+									(self._writebyte, val3),
 									(self._writeword, val4),
 									(self._writebyte, val5)])
 
