@@ -153,134 +153,80 @@ class Dobot:
 		data = self._port.read(1)
 		return len(data) == 1 and ord(data) == 1
 
-	def _write0(self, cmd):
+	def _write(self, cmd, write_commands=list()):
 		trys = _max_trys
 		while trys:
 			if not self._sendcommand(cmd):
-				trys = trys - 1
+				trys -= 1
 				continue
+
+			for c in write_commands:
+				c[0](c[1])
+
+			# self._writebyte(val)
 			if self._writechecksum():
 				return True
-			trys = trys - 1
+			trys -= 1
 		return False
+
+	def _write0(self, cmd):
+		return self._write(cmd)
 
 	def _write1(self, cmd, val):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writebyte(val)
-			if self._writechecksum():
-				return True
-			trys = trys - 1
-		return False
+		return self._write(cmd, [(self._writebyte, val)])
 
 	def _write2(self, cmd, val):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writeword(val)
-			if self._writechecksum():
-				return True
-			trys = trys - 1
-		return False
+		return self._write(cmd, [(self._writeword, val)])
 
 	def _write4(self, cmd, val):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writelong(val)
-			if self._writechecksum():
-				return True
-			trys = trys - 1
-		return False
+		return self._write(cmd, [(self._writelong, val)])
 
 	def _write14(self, cmd, val1, val2):
-		trys = _max_trys
-		while trys:
+		return self._write(cmd, [(self._writebyte, val1), (self._writelong, val2)])
+
+	def _write_read(self, cmd, write_commands):
+		tries = _max_trys
+		while tries:
 			if not self._sendcommand(cmd):
-				trys = trys - 1
+				tries -= 1
 				continue
-			self._writebyte(val1)
-			self._writelong(val2)
-			if self._writechecksum():
-				return True
-			trys = trys - 1
-		return False
+
+			for c in write_commands:
+				c[0](c[1])
+
+			self._writeword(self._crc & 0xFFFF)
+			self._port.flushInput()
+			self._crc_clear()
+			ret = self._readbyte()
+			if ret[0]:
+				crc = self._readchecksumword()
+				if crc[0]:
+					if self._crc & 0xFFFF != crc[1] & 0xFFFF:
+						# raise Exception('crc differs', self._crc, crc)
+						return (0, 0)
+					return (1, ret[1])
+			tries -= 1
+		return (0, 0)
 
 	def _write11121read1(self, cmd, val1, val2, val3, val4, val5):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writebyte(val1)
-			self._writebyte(val2)
-			self._writebyte(val3)
-			self._writeword(val4)
-			self._writebyte(val5)
-			self._writeword(self._crc&0xFFFF)
-			self._port.flushInput()
-			self._crc_clear()
-			ret = self._readbyte()
-			if ret[0]:
-				crc = self._readchecksumword()
-				if crc[0]:
-					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						# raise Exception('crc differs', self._crc, crc)
-						return (0,0)
-					return (1,ret[1])
-			trys = trys - 1
-		return (0,0)
+		return self._write_read(cmd, [(self._writebyte, val1),
+									(self._writebyte, val2)
+									(self._writebyte, val3)
+									(self._writeword, val4),
+									(self._writebyte, val5)])
 
 	def _waitAndWrite14441read1(self, cmd, val1, val2, val3, val4):
-		trys = _max_trys
-		while trys:
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
-			self._writelong(val1)
-			self._writelong(val2)
-			self._writelong(val3)
-			self._writebyte(val4)
-			self._writeword(self._crc&0xFFFF)
-			self._port.flushInput()
-			self._crc_clear()
-			ret = self._readbyte()
-			if ret[0]:
-				crc = self._readchecksumword()
-				if crc[0]:
-					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						# raise Exception('crc differs', self._crc, crc)
-						return (0,0)
-					return (1,ret[1])
-			trys = trys - 1
-		return (0,0)
+		return self._write_read(cmd, [(self._writelong, val1),
+									(self._writelong, val2),
+									(self._writelong, val3),
+									(self._writebyte, val4)])
 
 	def Steps(self, j1, j2, j3, j1dir, j2dir, j3dir, deferred=False):
 		'''
-		Adds a command to the controller queue.
-		Controller runs a timer that counts ticks (around 3.47kHz). "Steps" command specifies
-		a scaler for each joint (joint1 - base, and so on, according to the official docs).
-		On every "ticks modulo scaler == 0" the STEP pin (on the stepper driver) is toggled.
-		So, if scaler=1, then the STEP pin is toggled at around 3.47kHz frequency. If scaler
-		is 10, then STEP pin is toggled at around 347Hz.
-		
-		The "Steps" command also specifies the number of ticks to run the command for, the
-		state for DIR pin (on the stepper driver) to indicate which direction the motor will
-		turn, and the deferred flag to indicate whether the command should not be executed until
-		the "ExecQueue" command is issued (for precise and smooth trajectories built of many
-		short-running commands).
-
-		@param j1 - joint1 scaler
-		@param j2 - joint2 scaler
-		@param j3 - joint3 scaler
-		@param ticks - number of ticks to run the command for
+		Adds a command to the controller's queue to execute on FPGA.
+		@param j1 - joint1 magic number
+		@param j2 - joint2 magic number
+		@param j3 - joint3 magic number
 		@param j1dir - direction for joint1
 		@param j2dir - direction for joint2
 		@param j3dir - direction for joint3
@@ -294,7 +240,6 @@ class Dobot:
 		# if deferred:
 		# 	control |= 0x01
 		self._lock.acquire()
-		# result = self._write11121read1(CMD_STEPS, j1, j2, j3, ticks, control)
 		result = self._waitAndWrite14441read1(CMD_STEPS, j1, j2, j3, control)
 		self._lock.release()
 		return result
