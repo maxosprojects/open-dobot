@@ -1,5 +1,6 @@
 import serial
 import threading
+import time
 from serial import SerialException
 
 _max_trys = 1

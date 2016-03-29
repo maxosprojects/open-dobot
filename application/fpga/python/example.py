@@ -1,8 +1,6 @@
 #! /usr/bin/env python
 
 from Dobot import Dobot
-import time
-import math
 
 dobot = Dobot('/dev/tty.usbmodem1421', 115200)
 dobot.Open()

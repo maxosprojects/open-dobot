@@ -7,8 +7,6 @@ how to enable reporting mode and that way.
 '''
 
 from Dobot import Dobot
-import time
-import math
 
 dobot = Dobot('/dev/tty.usbmodem1421', 115200)
 dobot.Open()
