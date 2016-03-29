@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 
 '''
 This example continuously reports accelerometers.

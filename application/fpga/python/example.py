@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 from Dobot import Dobot
 import time
 import math
