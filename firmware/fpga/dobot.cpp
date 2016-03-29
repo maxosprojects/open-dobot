@@ -169,9 +169,6 @@ inline void processSerialBuffer() {
     if (processCommand()) {
       iterationsLeft -= 1000;
     } else {
-#ifdef DEBUG
-      debug(1);
-#endif
       iterationsLeft -= 1;
     }
     serialRead();
