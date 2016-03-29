@@ -3,7 +3,7 @@ import time
 import threading
 import sys
 
-_max_trys = 3
+_max_trys = 1
 
 CMD_READY = 0
 CMD_STEPS = 1
@@ -21,6 +21,8 @@ class Dobot:
 
 	def Open(self, timeout=0.025):
 		self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.01)
+		# Have to wait for Arduino initialization to finish, or else it doesn't boot.
+		time.sleep(2)
 
 	def Close(self):
 		self._port.close()
@@ -83,9 +85,8 @@ class Dobot:
 		trys = _max_trys
 		while trys:
 			self._port.flushInput()
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
+			self._sendcommand(cmd)
+			self._writechecksum()
 			val1 = self._readbyte()
 			if val1[0]:
 				crc = self._readchecksumword()
@@ -102,9 +103,8 @@ class Dobot:
 		trys = _max_trys
 		while trys:
 			self._port.flushInput()
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
+			self._sendcommand(cmd)
+			self._writechecksum()
 			val1 = self._readword()
 			if val1[0]:
 				val2 = self._readword()
@@ -123,9 +123,7 @@ class Dobot:
 		trys = _max_trys
 		while trys:
 			self._port.flushInput()
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
+			self._sendcommand(cmd)
 			val1 = self._readlong()
 			if val1[0]:
 				crc = self._readchecksumword()
@@ -140,9 +138,7 @@ class Dobot:
 		trys = _max_trys
 		while trys:
 			self._port.flushInput()
-			if not self._sendcommand(cmd):
-				trys = trys - 1
-				continue
+			self._sendcommand(cmd)
 			val1 = self._readslong()
 			if val1[0]:
 				val2 = self._readbyte()
@@ -170,26 +166,18 @@ class Dobot:
 		self._writebyte(val&0xFF)
 
 	def _writechecksum(self):
-		self._writeword(self._crc&0xFFFF)
-		val = self._readbyte()
-		if val[0]:
-			return True
-		return False
+		self._port.write(chr((self._crc>>8)&0xFF))
+		self._port.write(chr(self._crc&0xFF))
 
 	def _sendcommand(self, command):
 		self._crc_clear()
 		self._crc_update(command)
 		self._port.write(chr(command))
-		self._port.flush()
-		data = self._port.read(1)
-		return len(data) == 1 and ord(data) == 1
 
 	def _write(self, cmd, write_commands=list()):
 		trys = _max_trys
 		while trys:
-			if not self._sendcommand(cmd):
-				trys -= 1
-				continue
+			self._sendcommand(cmd)
 
 			for c in write_commands:
 				c[0](c[1])
@@ -218,16 +206,13 @@ class Dobot:
 	def _write_read(self, cmd, write_commands):
 		tries = _max_trys
 		while tries:
-			if not self._sendcommand(cmd):
-				tries -= 1
-				continue
+			self._port.flushInput()
+			self._sendcommand(cmd)
 
 			for c in write_commands:
 				c[0](c[1])
 
-			self._writeword(self._crc & 0xFFFF)
-			self._port.flushInput()
-			self._crc_clear()
+			self._writechecksum()
 			ret = self._readbyte()
 			if ret[0]:
 				crc = self._readchecksumword()
@@ -279,6 +264,7 @@ class Dobot:
 		'''
 		Executes deferred commands.
 		'''
+		raise NotImplementedError()
 		self._lock.acquire()
 		result = self._write0(CMD_EXEC_QUEUE)
 		self._lock.release()
@@ -295,7 +281,7 @@ class Dobot:
 		self._lock.release()
 		return result
 
-	def _SwitchToAccelerometerReportMode(self):
+	def SwitchToAccelerometerReportMode(self):
 		'''
 		Apparently the following won't work because of the way dobot was desgined
 		and limitations of AVR - cannot switch SPI from Slave to Master back.
@@ -309,6 +295,7 @@ class Dobot:
 		Switches dobot to accelerometer report mode.
 		Dobot must be reset to enter normal mode after issuing this command.
 		'''
+		raise NotImplementedError('Read function description for more info')
 		self._lock.acquire()
 		result = self._write_read(CMD_SWITCH_TO_ACCEL_REPORT_MODE, [])
 		self._lock.release()

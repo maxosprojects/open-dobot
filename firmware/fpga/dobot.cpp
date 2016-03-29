@@ -1,4 +1,6 @@
 
+// #define DEBUG
+
 #define F_CPU 16000000UL
 #define BAUD 115200
 #include <util/setbaud.h>
@@ -37,10 +39,13 @@ CommandQueue cmdQueue(CMD_QUEUE_SIZE);
 #define CMD_SWITCH_TO_ACCEL_REPORT_MODE 4
 // DO NOT FORGET TO UPDATE cmdArray SIZE!
 funcPtrs cmdArray[5];
-// Last index in the commands array.
-int cmdLastIndex;
+// Last index in the commands pointers array.
+int cmdPtrArrayLastIndex;
 
+// Buffer to read command into.
 byte cmd[20];
+// Current index in command buffer.
+byte cmdInBuffIndex = 0;
 byte crc[2];
 
 // ulong lastTimeExecuted = 0;
@@ -56,7 +61,7 @@ void setup() {
   cmdArray[CMD_EXEC_QUEUE] = cmdExecQueue;
   cmdArray[CMD_GET_ACCELS] = cmdGetAccels;
   cmdArray[CMD_SWITCH_TO_ACCEL_REPORT_MODE] = cmdSwitchToAccelReportMode;
-  cmdLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
+  cmdPtrArrayLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
 
   serialInit();
 
@@ -131,61 +136,111 @@ void setup() {
 
   // Power-on step 12
   FPGA_ENABLE_PORT |= (1<<FPGA_ENABLE_PIN);
+
+#ifdef DEBUG
+  initDebug();
+#endif
+
 }
 
-void processCommand() {
-  // If something is waiting in the serial port to be read...
-  if (UCSR0A&(1<<RXC0)) {
-    // Get incoming byte.
-    cmd[0] = UDR0;
-    if ((accelReportMode && cmd[0] != CMD_GET_ACCELS) || cmd[0] > cmdLastIndex) {
-      return;
+inline byte processCommand() {
+  if (cmdInBuffIndex > 0) {
+    if ((accelReportMode && cmd[0] != CMD_GET_ACCELS) || cmd[0] > cmdPtrArrayLastIndex) {
+      cmdInBuffIndex = 0;
+      return 0;
     }
-    cmdArray[cmd[0]]();
+    return cmdArray[cmd[0]]();
+  }
+  return 0;
+}
+
+/*
+ * Processes whatever we have received in the cmd buffer so far.
+ * Allows to pick up and process more than one command in one FPGA window (~20ms).
+ * The number of iterations experimantally (with oscilloscope) selected to fit into
+ * FPGA window taking into account the number of serial reads and an average time one
+ * command takes to process.
+ * It is done this way to avoid interrupts, which would make it impossible to talk to
+ * FPGA as we would lose SPI clock ticks and there is no SPI transmit buffer (only receive).
+ */
+inline void processSerialBuffer() {
+  int iterationsLeft = 10000;
+  while (iterationsLeft > 0) {
+    if (processCommand()) {
+      iterationsLeft -= 1000;
+    } else {
+#ifdef DEBUG
+      debug(1);
+#endif
+      iterationsLeft -= 1;
+    }
+    serialRead();
   }
 }
 
 // CMD: Returns magic number to indicate that the controller is alive.
-void cmdReady() {
-  serialWrite(1);
-  crcCcitt(cmd, 1);
+byte cmdReady() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 3) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 1)) {
+    return 0;
+  }
   // Return magic number.
   cmd[0] = 0x40;
   write1(cmd);
+  return 1;
 }
 
 // CMD: Adds a command to the queue.
-void cmdSteps() {
-  serialWrite(1);
-  if (!read13(&cmd[1])) {
-    return;
+byte cmdSteps() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 16) {
+    return 0;
   }
-  if (checkCrc(cmd, 14)) {
-    resetCrc();
-    if (cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13])) {
-      cmd[0] = 1;
-      write1(cmd);
-    } else {
-      cmd[0] = 0;
-      write1(cmd);
-    }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 14)) {
+    return 0;
   }
+  if (cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13])) {
+    cmd[0] = 1;
+  } else {
+    cmd[0] = 0;
+  }
+  write1(cmd);
+  return 1;
 }
 
 // CMD: Returns data read from accelerometers.
-void cmdGetAccels() {
-  serialWrite(1);
-  crcCcitt(cmd, 1);
+byte cmdGetAccels() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 3) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 1)) {
+    return 0;
+  }
   write22(cmd, &accelRear, &accelFront);
+  return 1;
 }
 
 // CMD: Executes deferred commands in the queue.
-void cmdExecQueue() {
+byte cmdExecQueue() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 3) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  crcCcitt(cmd, 1);
   defer = 0;
+  return 1;
 }
 
 // CMD: Switches controller to accelerometers report mode.
-void cmdSwitchToAccelReportMode() {
+byte cmdSwitchToAccelReportMode() {
   /* Apparently there is a problem with the way dobot was designed.
    * It is not possible to switch back from SPI Slave to Master.
    * So this code is left in case a proper solution comes up.
@@ -222,6 +277,7 @@ void cmdSwitchToAccelReportMode() {
       processCommand();
     }
   // }
+  return 1;
 }
 
 void serialInit(void) {
@@ -236,8 +292,9 @@ void serialInit(void) {
 
   UCSR0C = _BV(UCSZ01) | _BV(UCSZ00); /* 8-bit data */
   UCSR0B = _BV(RXEN0) | _BV(TXEN0);   /* Enable RX and TX */
+}
 
-//// DEBUG ////
+void initDebug() {
 //   UBRR1H = UBRRH_VALUE;
 //   UBRR1L = UBRRL_VALUE;
 
@@ -249,14 +306,23 @@ void serialInit(void) {
 
 //   UCSR1C = _BV(UCSZ11) | _BV(UCSZ10); /* 8-bit data */
 //   UCSR1B = _BV(RXEN1) | _BV(TXEN1);   /* Enable RX and TX */
+
+  DDRD |= (1<<PORTD3);
 }
 
-void serialWrite(byte c) {
+inline void debug(byte c) {
+  // loop_until_bit_is_set(UCSR1A, UDRE1);
+  // UDR1 = c;
+  PORTD |= (1<<PORTD3);
+  PORTD &= ~(1<<PORTD3);
+}
+
+inline void serialWrite(byte c) {
   loop_until_bit_is_set(UCSR0A, UDRE0);
   UDR0 = c;
 }
 
-void serialWrite(byte data[], byte num) {
+inline void serialWrite(byte data[], byte num) {
   for (byte i = 0; i < num; i++) {
     loop_until_bit_is_set(UCSR0A, UDRE0);
     UDR0 = data[i];
@@ -265,7 +331,7 @@ void serialWrite(byte data[], byte num) {
 
 // Returns number of bytes read or 0 if timeout occurred.
 // Timeout: 1000 increments ~ 600us, so allow about 9ms interbyte and 18ms overall.
-byte serialReadNum(byte data[], byte num) {
+inline byte serialReadNum(byte data[], byte num) {
   unsigned int interByteTimeout = 0;
   unsigned int transactionTimeout = 0;
   byte cnt = 0;
@@ -284,6 +350,15 @@ byte serialReadNum(byte data[], byte num) {
     data[cnt++] = tmp;
   }
   return cnt;
+}
+
+inline void serialRead() {
+  if (UCSR0A&(1<<RXC0)) {
+    cmd[cmdInBuffIndex] = UDR0;
+    if (cmdInBuffIndex < 19) {
+      cmdInBuffIndex++;
+    }
+  }
 }
 
 uint accelRead(unsigned char pin) {
@@ -354,9 +429,6 @@ uint16_t dataToUint(byte data[]) {
 }
 
 byte checkCrc(byte data[], int len) {
-  if (!read2(&cmd[len])) {
-    return 0;
-  }
   crcCcitt(cmd, len);
   if (data[len] == crc[0] && data[len + 1] == crc[1]) {
     return 1;
@@ -408,6 +480,7 @@ inline void writeSpiByte(byte data) {
   SPDR = data;
   loop_until_bit_is_set(SPSR, SPIF);
   junk = SPDR;
+  serialRead();
 }
 
 void writeSpi(Command* cmd) {
@@ -441,7 +514,9 @@ int main() {
       } else {
         writeSpi(cmdQueue.popTail());
       }
-      processCommand();
+      processSerialBuffer();
+    } else {
+      serialRead();
     }
   }
   return 0;

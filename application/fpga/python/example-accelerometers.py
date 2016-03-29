@@ -11,7 +11,6 @@ import math
 
 dobot = Dobot('/dev/tty.usbmodem1421', 115200)
 dobot.Open()
-time.sleep(2)
 
 while True:
 	print dobot.GetAccelerometers()

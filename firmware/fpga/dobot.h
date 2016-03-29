@@ -11,7 +11,7 @@ typedef unsigned char byte;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
-typedef void(*funcPtrs)(void);
+typedef byte(*funcPtrs)(void);
 
 // typedef struct {
 //   byte j1dir : 1;
@@ -28,11 +28,11 @@ typedef struct {
   byte control;
 } Command;
 
-void cmdReady();
-void cmdSteps();
-void cmdExecQueue();
-void cmdGetAccels();
-void cmdSwitchToAccelReportMode();
+byte cmdReady();
+byte cmdSteps();
+byte cmdExecQueue();
+byte cmdGetAccels();
+byte cmdSwitchToAccelReportMode();
 void crcCcitt(byte data[], int len);
 void crcCcitt(byte data[], int len, byte keepSeed);
 byte read13(byte data[]);
@@ -45,8 +45,11 @@ void resetCrc();
 void serialInit(void);
 void serialWrite(byte c);
 void serialWrite(byte data[], byte num);
+void serialRead();
 byte serialReadNum(byte data[], byte num);
 uint accelRead(unsigned char pin);
+void initDebug();
+void debug(byte c);
 
 // Rest
 volatile byte sequenceRest[19] = {
