@@ -260,21 +260,23 @@ byte cmdSwitchToAccelReportMode() {
     FPGA_COMMAND_PORT |= (1<<FPGA_COMMAND_ACCELS_INIT_PIN);
 
     _delay_us(35);
+    serialRead();
 
     // Set SPI as Master.
     SPI_DDR = (1<<SPI_MOSI)|(1<<SPI_SCK)|(1<<SPI_SS);
     SPCR = (1<<SPE)|(1<<MSTR)|(1<<SPR0);
 
     _delay_us(35);
+    serialRead();
 
     // Never return from this function. Only update accelerometers
     // and return their values to the driver.
     // Process next waiting commands in between or else they will time out.
     while (1) {
       accelRear = accelRead(FPGA_COMMAND_ACCEL_REAR_SS_PIN);
-      processCommand();
+      processSerialBuffer();
       accelFront = accelRead(FPGA_COMMAND_ACCEL_FRONT_SS_PIN);
-      processCommand();
+      processSerialBuffer();
     }
   // }
   return 1;
@@ -369,16 +371,22 @@ uint accelRead(unsigned char pin) {
   junk = SPSR;
   junk = SPDR;
   for (byte i = 0; i < 17; i++) {
+    serialRead();
     _delay_us(770);
+    serialRead();
     FPGA_COMMAND_PORT &= ~(1<<pin);
     SPDR = 0x10;
+    serialRead();
     loop_until_bit_is_set(SPSR, SPIF);
     SPDR = 0x00;
+    serialRead();
     loop_until_bit_is_set(SPSR, SPIF);
     data = SPDR << 8;
     SPDR = 0x00;
+    serialRead();
     loop_until_bit_is_set(SPSR, SPIF);
     data |= SPDR;
+    serialRead();
     // There are only 11 bits accelerometer returns,
     // so take advantage by shifting to prevent sum overflow.
     result += (data >> 5);
