@@ -1,7 +1,6 @@
 import serial
-import time
 import threading
-import sys
+from serial import SerialException
 
 _max_trys = 1
 
@@ -10,6 +9,7 @@ CMD_STEPS = 1
 CMD_EXEC_QUEUE = 2
 CMD_GET_ACCELS = 3
 CMD_SWITCH_TO_ACCEL_REPORT_MODE = 4
+
 
 class Dobot:
 	def __init__(self, comport, rate):
@@ -20,9 +20,13 @@ class Dobot:
 		self._crc = 0xffff
 
 	def Open(self, timeout=0.025):
-		self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.01)
-		# Have to wait for Arduino initialization to finish, or else it doesn't boot.
-		time.sleep(2)
+		try:
+			self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.01)
+			# Have to wait for Arduino initialization to finish, or else it doesn't boot.
+			time.sleep(2)
+		except SerialException as e:
+			print e
+			exit(1)
 
 	def Close(self):
 		self._port.close()
