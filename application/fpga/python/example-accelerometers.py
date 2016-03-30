@@ -3,7 +3,7 @@
 '''
 This example continuously reports accelerometers.
 Refer to _SwitchToAccelerometerReportMode function in DobotDriver.py for details on
-how to enable reporting mode and that way.
+how to enable reporting mode.
 '''
 
 from DobotDriver import DobotDriver

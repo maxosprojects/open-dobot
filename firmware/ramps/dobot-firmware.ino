@@ -1,3 +1,13 @@
+/*
+open-dobot firmware for RAMPS version.
+
+Find improved FPGA version, driver and SDK at https://github.com/maxosprojects/open-dobot
+
+Author: maxosprojects (March 18 2016)
+Additional Authors: <put your name here>
+
+License: MIT
+*/
 
 #include "dobot.h"
 

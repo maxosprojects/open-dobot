@@ -1,3 +1,16 @@
+/*
+open-dobot firmware that controls Dobot FPGA.
+
+Find driver and SDK at https://github.com/maxosprojects/open-dobot
+
+Author: maxosprojects (March 18 2016)
+Additional Authors: <put your name here>
+
+Version: 0.3.0
+
+License: MIT
+*/
+
 #ifndef DOBOT_H_INCLUDED
 #define DOBOT_H_INCLUDED
 

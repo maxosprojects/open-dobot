@@ -1,3 +1,18 @@
+"""
+open-dobot driver.
+
+Implements driver to open firmware that controls Dobot FPGA.
+Abstracts communication protocol, CCITT CRC and commands sent to FPGA.
+Find firmware and SDK at https://github.com/maxosprojects/open-dobot
+
+Author: maxosprojects (March 18 2016)
+Additional Authors: <put your name here>
+
+Version: 0.3.0
+
+License: MIT
+"""
+
 import serial
 import threading
 import time
@@ -13,7 +28,7 @@ CMD_SWITCH_TO_ACCEL_REPORT_MODE = 4
 
 
 class DobotDriver:
-	def __init__(self, comport, rate):
+	def __init__(self, comport, rate=115200):
 		self._lock = threading.Lock()
 		self._comport = comport
 		self._rate = rate
@@ -241,6 +256,27 @@ class DobotDriver:
 									(self._writelong, val2),
 									(self._writelong, val3),
 									(self._writebyte, val4)])
+
+	def reverseBits32(self, val):
+		# return long(bin(val&0xFFFFFFFF)[:1:-1], 2)
+		return int('{0:032b}'.format(val)[::-1], 2)
+
+	def freqToCmdVal(self, freq):
+		'''
+		Converts stepping frequency into a command value that dobot takes.
+		'''
+		if freq == 0:
+			return 0x0242f000;
+		return self.reverseBits32(long(25000000/freq))
+
+	def stepsToCmdVal(self, steps):
+		'''
+		Converts number of steps for dobot to do in 20ms into a command value that dobot
+		takes to set the stepping frequency.
+		'''
+		if steps == 0:
+			return 0x0242f000;
+		return self.reverseBits32(long(500000/steps))
 
 	def Steps(self, j1, j2, j3, j1dir, j2dir, j3dir, deferred=False):
 		'''
