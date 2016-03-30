@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 
-from Dobot import Dobot
+from DobotDriver import DobotDriver
 
-dobot = Dobot('/dev/tty.usbmodem1421', 115200)
-dobot.Open()
+driver = DobotDriver('/dev/tty.usbmodem1421', 115200)
+driver.Open()
 
 def reverseBits(val):
 	rev = 0
@@ -12,7 +12,12 @@ def reverseBits(val):
 	return rev & 0xFFFFFFFF
 
 def convertFreq(val):
+	if val == 0:
+		return 0x0242f000;
 	return reverseBits(25000000 / val)
 
+print convertFreq(6300)
+print reverseBits(convertFreq(6300))
+
 while True:
-	ret = dobot.Steps(convertFreq(504), 0, 0, 0, 0, 0)
+	ret = driver.Steps(0, convertFreq(2250), convertFreq(6300), 0, 0, 1)

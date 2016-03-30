@@ -19,14 +19,14 @@ number_of_steps = 600Hz * 20ms = 600 * 0.02 = 12
 
 '''
 
-from Dobot import Dobot
+from DobotDriver import DobotDriver
 
-dobot = Dobot('/dev/tty.usbmodem1421', 115200)
-dobot.Open()
+driver = DobotDriver('/dev/tty.usbmodem1421', 115200)
+driver.Open()
 successes = 0
 i = 0
 while True:
-	ret = dobot.isReady()
+	ret = driver.isReady()
 	if ret[0] and ret[1]:
 		successes += 1
 	if successes > 10:
@@ -35,7 +35,7 @@ while True:
 	if i > 100:
 		raise Exception('Comm problem')
 
-print dobot.GetAccelerometers()
+print driver.GetAccelerometers()
 
 # Magic number corresponding to frequency in Hz.
 # dict: {frequency: code}
@@ -65,7 +65,7 @@ def execute(keys1, keys2, keys3, direction1, direction2, direction3):
 			# Check for return from Arduino to make sure the command was queued.
 			# See function desciption for more details.
 			while not ret[1]:
-				ret = dobot.Steps(code1, code2, code3, direction1, direction2, direction3)
+				ret = driver.Steps(code1, code2, code3, direction1, direction2, direction3)
 
 increasing = sorted(freq.keys())
 decreasing = sorted(freq.keys(), reverse=True)

@@ -12,7 +12,7 @@ CMD_GET_ACCELS = 3
 CMD_SWITCH_TO_ACCEL_REPORT_MODE = 4
 
 
-class Dobot:
+class DobotDriver:
 	def __init__(self, comport, rate):
 		self._lock = threading.Lock()
 		self._comport = comport

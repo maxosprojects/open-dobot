@@ -2,14 +2,14 @@
 
 '''
 This example continuously reports accelerometers.
-Refer to _SwitchToAccelerometerReportMode function in Dobot.py for details on
+Refer to _SwitchToAccelerometerReportMode function in DobotDriver.py for details on
 how to enable reporting mode and that way.
 '''
 
-from Dobot import Dobot
+from DobotDriver import DobotDriver
 
-dobot = Dobot('/dev/tty.usbmodem1421', 115200)
-dobot.Open()
+driver = DobotDriver('/dev/tty.usbmodem1421', 115200)
+driver.Open()
 
 while True:
-	print dobot.GetAccelerometers()
+	print driver.GetAccelerometers()
