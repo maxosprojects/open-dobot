@@ -8,7 +8,7 @@ Find firmware and SDK at https://github.com/maxosprojects/open-dobot
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 0.3.0
+Version: 0.4.0
 
 License: MIT
 """
@@ -17,6 +17,7 @@ import serial
 import threading
 import time
 from serial import SerialException
+import math
 
 _max_trys = 1
 
@@ -25,6 +26,9 @@ CMD_STEPS = 1
 CMD_EXEC_QUEUE = 2
 CMD_GET_ACCELS = 3
 CMD_SWITCH_TO_ACCEL_REPORT_MODE = 4
+
+piToDegrees = 180.0 / math.pi
+halfPi = math.pi / 2.0
 
 
 class DobotDriver:
@@ -277,6 +281,15 @@ class DobotDriver:
 		if steps == 0:
 			return 0x0242f000;
 		return self.reverseBits32(long(500000/steps))
+
+	def accelToAngle(self, val, offset):
+		return self.accelToRadians(val, offset) * piToDegrees
+
+	def accelToRadians(self, val, offset):
+		try:
+			return math.asin(float(val - offset) / 493.56)
+		except ValueError:
+			return halfPi
 
 	def Steps(self, j1, j2, j3, j1dir, j2dir, j3dir, deferred=False):
 		'''

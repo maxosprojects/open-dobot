@@ -19,17 +19,20 @@ from DobotSDK import Dobot
 
 dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 
-dobot.moveTo(160.0, 0.0, 60.0, 1)
+duration = 1
+
+dobot.moveTo(160.0, 0.0, 60.0, duration)
 print '======================================'
 for i in range(3):
-	dobot.moveTo(160.0, 60.0, 60.0, 1)
+	dobot.moveTo(160.0, 60.0, 60.0, duration)
 	print '======================================'
-	dobot.moveTo(220.0, 60.0, 60.0, 1)
+	dobot.moveTo(220.0, 60.0, 60.0, duration)
 	print '======================================'
-	dobot.moveTo(220.0, -60.0, 60.0, 1)
+	dobot.moveTo(220.0, -60.0, 60.0, duration)
 	print '======================================'
-	dobot.moveTo(160.0, -60.0, 60.0, 1)
+	dobot.moveTo(160.0, -60.0, 60.0, duration)
 	print '======================================'
-dobot.moveTo(160.0, 0.0, 60.0, 1)
+dobot.moveTo(160.0, 0.0, 60.0, duration)
 print '======================================'
-dobot.moveTo(160.0, 0.0, 215.0, 1)
+dobot.moveTo(160.0, 0.0, 215.0, duration)
+print '======================================'

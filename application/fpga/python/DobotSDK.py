@@ -1,26 +1,26 @@
 """
 open-dobot SDK.
 
-SDK providing high-level functions to control Dobot via the driver to open firmware that controls Dobot FPGA.
+SDK providing high-level functions to control Dobot via the driver to open firmware, which, in turn, controls Dobot FPGA.
 Abstracts specifics of commands sent to FPGA.
 Find firmware and driver at https://github.com/maxosprojects/open-dobot
 
-It is assumed that upon SDK initialization the arms are set as follows:
-- rear arm is set vertically
-- forearm is set horizontally
-Refer to docs/images/arm-description.png and docs/images/reference-frame.png to find more about reference
-frame and arm names.
-SDK keeps track of the current end effector pose, thus in case the arm slips or motors are disabled while
-in move (with the "Laser Adjustment" button) it has to be re-initialized - the arm set to initial configuration
-(end effector to initial pose) and SDK re-initialized.
+It is assumed that upon SDK initialization the arms are beetween 0 and 90 degrees - beetween their normal
+horizontal and vertical positions.
+Upon initialization accelerometers are read to figure out current arms' configuration. Accelerometers get confused
+when rear arm leans backwards from the dobot base or when forearm bends towards the base.
+Also, Inverse Kinematics at the moment don't account for when forearm is looking up (higher than it's
+normal horizontal position). So be gentle and give dobot some feasible initial configuration in case it happened
+to be beyond the mentioned limits.
+Refer to docs/images/ to find more about reference frame, arm names and more.
 
-Proper initialization based on data from accelerometers is under development (planned for 0.4.0). This would
-enable to initialize from almost any end effector pose.
+SDK keeps track of the current end effector pose, thus in case the arm slips or motors are disabled while
+in move (with the "Laser Adjustment" button) it has to be re-initialized and SDK re-initialized.
 
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 0.3.0
+Version: 0.4.0
 
 License: MIT
 """
@@ -32,6 +32,10 @@ from serial import SerialException
 from DobotDriver import DobotDriver
 from DobotInverseKinematics import DobotInverseKinematics
 import timeit
+import math
+
+# calibration-tool.py for details
+accelOffsets = (1024, 1024)
 
 # The NEMA 17 stepper motors that Dobot uses are 200 steps per revolution.
 stepperMotorStepsPerRevolution = 200.0
@@ -54,15 +58,15 @@ class Dobot:
 		self._driver = DobotDriver(port, rate)
 		self._driver.Open(timeout)
 		self._ik = DobotInverseKinematics(debug=debug)
-		self._x = 160.0
-		self._y = 0.0
-		self._z = 215.0
-		self._baseAngle = 0.0
-		self._rearAngle = 90.0
-		self._foreAngle = 0.0
+		# Initialize arms current configuration from accelerometers
+		accels = self._driver.GetAccelerometers()
+		accelRear = accels[1]
+		accelFore = accels[2]
+		rearAngle = math.pi / 2 - self._driver.accelToRadians(accelRear, accelOffsets[0])
+		foreAngle = self._driver.accelToRadians(accelFore, accelOffsets[1])
 		self._baseSteps = long(0)
-		self._rearSteps = long(0)
-		self._foreSteps = long(0)
+		self._rearSteps = long((rearAngle / math.pi / 2.0) * rearArmActualStepsPerRevolution + 0.5)
+		self._foreSteps = long((foreAngle / math.pi / 2.0) * foreArmActualStepsPerRevolution + 0.5)
 
 	def _debug(self, *args):
 		if self._debugOn:

@@ -22,11 +22,19 @@ IK 2D, 2DOF, revolute revolute: https://www.youtube.com/watch?v=cvzv3YxuoQE
 algorithm
 
 xy plane is paralell to surface dobot is on. z is perpendicular
-1. first get distance, in xy plane, to current point from origin using forward kinematics, known angles, and pythagoreas thm. This is your radius. Your angle can be defined to be theta original. You now have your starting point in polar coordinates.
-2. Ignore the desired z position data for now. Get the polar coordinates for the desired point. The radius is not important now. The angle is though. Subtracting the desired angle from the current angle gives you the number of degrees and direction to rotate the base.
-3. The radius from step 1 (starting radius) gives you your current horizontal position (imagine it as x or y, doesn't matter). You also already know your current z position (potentially from step 1).
-4. The radius from step 2 (desired radius) gives you your desired horizontal position (imagine it as x or y, doesn't matter). Of course, the user has already input the desired z position. This is now a 2D problem with two arms that each rotate (2 degrees of freedom)
-5: use IK, see ik 2d video, to find number of degrees and direction to rotate rear and fore arms. Note that there are often two solutions. One (elbow down) is not possible.
+1. first get distance, in xy plane, to current point from origin using forward kinematics, known angles,
+	and pythagoreas thm. This is your radius. Your angle can be defined to be theta original. You now have your
+	starting point in polar coordinates
+2. Ignore the desired z position data for now. Get the polar coordinates for the desired point. The radius is
+	not important now. The angle is though. Subtracting the desired angle from the current angle gives you the
+	number of degrees and direction to rotate the base
+3. The radius from step 1 (starting radius) gives you your current horizontal position (imagine it as x or y,
+	doesn't matter). You also already know your current z position (potentially from step 1)
+4. The radius from step 2 (desired radius) gives you your desired horizontal position (imagine it as x or y,
+	doesn't matter). Of course, the user has already input the desired z position. This is now a 2D problem with
+	two arms that each rotate (2 degrees of freedom)
+5: use IK, see ik 2d video, to find number of degrees and direction to rotate rear and fore arms. Note that there
+	are often two solutions. One (elbow down) is not possible.
 6. Check that move is valid (e.g. not out of range, etc...)
 7. move
 
@@ -58,7 +66,7 @@ class DobotInverseKinematics:
 	#cartesian (x,y,z) coordinate
 	#robot dimensions
 	#output:
-	#angles for robot arm base, rear, and fore arms in degree
+	#angles for robot arm base, rear, and fore arms in degrees
 	def convert_cartesian_coordinate_to_arm_angles(self, x, y, z):
 
 		# do a general check to see if even a maximally stretched arm could reach the point
@@ -151,7 +159,8 @@ class DobotInverseKinematics:
 			ret = False
 
 		# check the foreArmAngle
-		# the valid forearm angle is dependent on the rear arm angle. The real world angle of the forearm (0 degrees = horizontal) needs to be evaluated.
+		# the valid forearm angle is dependent on the rear arm angle. The real world angle of the forearm
+		# (0 degrees = horizontal) needs to be evaluated.
 		# min empirically determined to be around -105 degrees. Using -102.
 		# max empirically determined to be around 21 degrees. Using 18.
 		if (-102 > foreArmAngle > 18):
@@ -161,11 +170,11 @@ class DobotInverseKinematics:
 		return ret
 
 """
-	#get polar coordinates for the current point
-	#radius is simply given by the base angle
-	# can read the angles from the IMU and empirically determine the radius and angle - I'm using this approach since it should account for any build up in error, assuming accelerometers
-	#are accurate!!!!
-	#alternatively can just use pythagorean thm on theoretical current x,y data
+	# get polar coordinates for the current point
+	# radius is simply given by the base angle
+	# can read the angles from the IMU and empirically determine the radius and angle - I'm using this approach
+	# since it should account for any build up in error, assuming accelerometers are accurate!!!!
+	# alternatively can just use pythagorean thm on theoretical current x,y data
 
 	startRearArmAngle = get_rear_arm_angle
 	startForeArmAngle = get_fore_arm_angle
