@@ -6,7 +6,7 @@ Find driver and SDK at https://github.com/maxosprojects/open-dobot
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 0.3.0
+Version: 0.5.0
 
 License: MIT
 */
@@ -17,6 +17,7 @@ License: MIT
 #include <avr/io.h>
 #include <util/delay.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define NOP __asm__ __volatile__ ("nop\n\t")
 
@@ -41,14 +42,23 @@ typedef struct {
   byte control;
 } Command;
 
+typedef struct {
+  volatile byte* portin;
+  byte pin;
+  volatile byte* ddr;
+} SwitchPort;
+
 byte cmdReady();
 byte cmdSteps();
 byte cmdExecQueue();
 byte cmdGetAccels();
 byte cmdSwitchToAccelReportMode();
+byte cmdCalibrateJoint();
+byte cmdEmergencyStop();
 void crcCcitt(byte data[], int len);
 void crcCcitt(byte data[], int len, byte keepSeed);
 byte read13(byte data[]);
+void write0();
 void write1(byte data[]);
 byte write22(byte data[], uint* val1, uint* val2);
 byte write4(byte data[]);
@@ -63,6 +73,7 @@ byte serialReadNum(byte data[], byte num);
 uint accelRead(unsigned char pin);
 void initDebug();
 void debug(byte c);
+void debugPrint(char const *str);
 
 // Rest
 volatile byte sequenceRest[19] = {
@@ -85,6 +96,170 @@ volatile byte sequenceRest[19] = {
 0x2f,
 0x80,
 0x5a // end signature
+};
+
+/*
+ * This is the list of pins unused py the top board (FPGA board).
+ * !!!!! BEFORE CHANGING ANY OF THESE:  !!!!!!
+ * 1. Check you're not targeting USART pins
+ * 2. Check you're not targeting any communication and control pins
+ *
+ * Refer to open-dobot/docs/images/arduino.jpg
+ * 
+ * Communication and control pins in use are:
+ * D0-1 (USB serial), D12 (laser), D18-21 (bluetooth serial, I2C),
+ * D40-53 (FPGA control, D48 - bluetooth enable, D41 - pump, D43 - valve),
+ * D59-D61 (unknown, but soldered)
+ * 
+ * Some of the unused pins are not soldered through to the FPGA board
+ * and can be used here:
+ * D54-58, D62-69, D22-39
+ */
+SwitchPort calibrationPins[] = {
+  {
+    // D3 - reference 0
+    &PINE,
+    PE5,
+    &DDRE
+  },
+  {
+    // D4 - reference 1
+    &PING,
+    PG5,
+    &DDRG
+  },
+  {
+    // D5 - reference 2
+    &PINE,
+    PE3,
+    &DDRE
+  },
+  {
+    // D6 - reference 3
+    &PINH,
+    PH3,
+    &DDRH
+  },
+  {
+    // D7 - reference 4
+    &PINH,
+    PH4,
+    &DDRH
+  },
+  {
+    // D8 - reference 5
+    &PINH,
+    PH5,
+    &DDRH
+  },
+  {
+    // D9 - reference 6
+    &PINH,
+    PH6,
+    &DDRH
+  },
+  {
+    // D10 - reference 7
+    &PINB,
+    PB4,
+    &DDRB
+  }
+};
+
+class Calibrator {
+  public:
+    Calibrator() {
+      running = 0;
+      backing = 0;
+      // No pin currently selected.
+      pin = 255;
+      // Pull-up is disabled.
+      pullup = 0;
+    };
+
+    // control: [7-4] unused, [4] - pinMode, [3] - pullup enable, [2] - direction, [1-0] - joint
+    void start(byte newPin, byte control, ulong *fwdSpeed, ulong *backSpeed) {
+      // Disable pull-up resistor if it was enabled.
+      if (pullup == 1) {
+        *(calibrationPins[pin].portin) &= ~(1 << calibrationPins[pin].pin);
+      }
+      // Check the boundaries.
+      if (newPin < sizeof(calibrationPins) / 3) {
+        pin = newPin;
+        running = 1;
+        byte joint = control & 0x03;
+        pullup = (control >> 3) & 0x01;
+        pinMode = (control >> 4) & 0x01;
+        // direction
+        fwdCmd.control = (control & 0x04) << (5 - joint);
+        backCmd.control = (~control & 0x04) << (5 - joint);
+        memset(&fwdCmd, 0, 12);
+        memset(&backCmd, 0, 12);
+        ulong *ptr;
+        ptr = (ulong*) &fwdCmd;
+        ptr[joint] = *fwdSpeed;
+        ptr = (ulong*) &backCmd;
+        ptr[joint] = *backSpeed;
+        // Enable pull-up resistor.
+        if (pullup) {
+          *(calibrationPins[pin].portin) |= (1 << calibrationPins[pin].pin);
+        }
+      }
+    };
+
+    void startBacking() {
+      backing = 1;
+    }
+
+    void stop() {
+      running = 0;
+      backing = 0;
+      // Disable pull-up resistor if it was enabled.
+      if (pullup == 1) {
+        *(calibrationPins[pin].portin) &= ~(1 << calibrationPins[pin].pin);
+      }
+    };
+
+    Command* getForwardCommand() {
+      return &fwdCmd;
+    };
+
+    Command* getBackoffCommand() {
+      return &backCmd;
+    };
+
+    byte isRunning() {
+      return running;
+    };
+
+    byte isBacking() {
+      return backing;
+    }
+
+    // Returns 0 if not hit and 1 if hit, based on the mode requested in start()
+    byte isHit() {
+      if (pinMode) {
+        return ~(*(calibrationPins[pin].portin) >> calibrationPins[pin].pin) & 0x01;
+      } else {
+        return (*(calibrationPins[pin].portin) >> calibrationPins[pin].pin) & 0x01;
+      }
+    };
+
+  private:
+    // 0 - no, 1 - yes
+    byte running;
+    // 0 - not backing, 1 - backing
+    byte backing;
+    // Pin mode: 0 - normal LOW, 1 - normal HIGH
+    byte pinMode;
+    // Pin to poll state of.
+    byte pin;
+    // Enabling pullup.
+    byte pullup;
+    // Command to send when moving forward - towards the endstop/interrupter.
+    Command fwdCmd;
+    // Command to send when moving back - from endstop/interrupter to get accurate location.
+    Command backCmd;
 };
 
 class CommandQueue {
@@ -138,6 +313,11 @@ class CommandQueue {
         tail = 0;
       }
       return ptr;
+    };
+
+    void clear() {
+      head = 0;
+      tail = 0;
     };
 
     byte isEmpty() {

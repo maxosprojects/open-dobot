@@ -6,12 +6,12 @@ Find driver and SDK at https://github.com/maxosprojects/open-dobot
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 0.3.0
+Version: 0.5.0
 
 License: MIT
 */
 
-// #define DEBUG
+#define DEBUG
 
 #define F_CPU 16000000UL
 #define BAUD 115200
@@ -43,14 +43,17 @@ License: MIT
 #define CMD_QUEUE_SIZE     200
 
 CommandQueue cmdQueue(CMD_QUEUE_SIZE);
+Calibrator calibrator;
 
 #define CMD_READY 0
 #define CMD_STEPS 1
 #define CMD_EXEC_QUEUE 2
 #define CMD_GET_ACCELS 3
 #define CMD_SWITCH_TO_ACCEL_REPORT_MODE 4
+#define CMD_CALIBRATE_JOINT 5
+#define CMD_EMERGENCY_STOP 6
 // DO NOT FORGET TO UPDATE cmdArray SIZE!
-funcPtrs cmdArray[5];
+funcPtrs cmdArray[7];
 // Last index in the commands pointers array.
 int cmdPtrArrayLastIndex;
 
@@ -73,6 +76,8 @@ void setup() {
   cmdArray[CMD_EXEC_QUEUE] = cmdExecQueue;
   cmdArray[CMD_GET_ACCELS] = cmdGetAccels;
   cmdArray[CMD_SWITCH_TO_ACCEL_REPORT_MODE] = cmdSwitchToAccelReportMode;
+  cmdArray[CMD_CALIBRATE_JOINT] = cmdCalibrateJoint;
+  cmdArray[CMD_EMERGENCY_STOP] = cmdEmergencyStop;
   cmdPtrArrayLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
 
   serialInit();
@@ -222,6 +227,33 @@ byte cmdSteps() {
   return 1;
 }
 
+// CMD: Starts calibration routine.
+byte cmdCalibrateJoint() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 13) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 11)) {
+    return 0;
+  }
+  // The received command has the following structure:
+  // long - forward speed
+  // long - back speed
+  // byte - pin number
+  // byte - control structure: [1-0] - joint (#3 - illegal)
+  byte pin = cmd[9];
+  byte ctrl = cmd[10];
+  byte joint = ctrl & 0x03;
+  if (joint == 3) {
+    return 0;
+  }
+  cmdQueue.clear();
+  calibrator.start(pin, ctrl, (ulong*) &cmd[1], (ulong*) &cmd[5]);
+  write0();
+  return 1;
+}
+
 // CMD: Returns data read from accelerometers.
 byte cmdGetAccels() {
   // Check if not enough bytes yet.
@@ -233,6 +265,23 @@ byte cmdGetAccels() {
     return 0;
   }
   write22(cmd, &accelRear, &accelFront);
+  return 1;
+}
+
+// CMD: Stops the arm by clearing command buffer and stopping calibrator
+// Use in emergency
+byte cmdEmergencyStop() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 3) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 1)) {
+    return 0;
+  }
+  cmdQueue.clear();
+  calibrator.stop();
+  write0();
   return 1;
 }
 
@@ -306,26 +355,39 @@ void serialInit(void) {
 }
 
 void initDebug() {
-//   UBRR1H = UBRRH_VALUE;
-//   UBRR1L = UBRRL_VALUE;
+#ifdef DEBUG
+  UBRR1H = UBRRH_VALUE;
+  UBRR1L = UBRRL_VALUE;
+#if USE_2X
+  UCSR1A |= _BV(U2X1);
+#else
+  UCSR1A &= ~(_BV(U2X1));
+#endif
+  UCSR1C = _BV(UCSZ11) | _BV(UCSZ10); /* 8-bit data */
+  UCSR1B = _BV(RXEN1) | _BV(TXEN1);   /* Enable RX and TX */
 
-// #if USE_2X
-//   UCSR1A |= _BV(U2X1);
-// #else
-//   UCSR1A &= ~(_BV(U2X1));
-// #endif
+  // DDRD |= (1<<PORTD3);
+#endif
+}
 
-//   UCSR1C = _BV(UCSZ11) | _BV(UCSZ10); /* 8-bit data */
-//   UCSR1B = _BV(RXEN1) | _BV(TXEN1);   /* Enable RX and TX */
-
-  DDRD |= (1<<PORTD3);
+inline void debugPrint(char const *str) {
+#ifdef DEBUG
+  byte i = 0;
+  while (str[i] != 0) {
+    debug(str[i]);
+    i++;
+  }
+  debug(13);
+#endif
 }
 
 inline void debug(byte c) {
-  // loop_until_bit_is_set(UCSR1A, UDRE1);
-  // UDR1 = c;
-  PORTD |= (1<<PORTD3);
-  PORTD &= ~(1<<PORTD3);
+#ifdef DEBUG
+  loop_until_bit_is_set(UCSR1A, UDRE1);
+  UDR1 = c;
+  // PORTD |= (1<<PORTD3);
+  // PORTD &= ~(1<<PORTD3);
+#endif
 }
 
 inline void serialWrite(byte c) {
@@ -412,6 +474,10 @@ byte read2(byte data[]) {
 
 byte read13(byte data[]) {
   return serialReadNum(data, 13);
+}
+
+void write0() {
+  serialWrite(crc, 2);
 }
 
 void write1(byte data[]) {
@@ -526,7 +592,21 @@ int main() {
   while (1) {
     if (SPDR == 0x5a) {
       SPDR = 0x00;
-      if (cmdQueue.isEmpty()) {
+      if (calibrator.isRunning()) {
+        if (calibrator.isHit()) {
+          if (calibrator.isBacking()) {
+            writeSpi(calibrator.getBackoffCommand());
+          } else {
+            calibrator.startBacking();
+            writeSpi(calibrator.getBackoffCommand());
+          }
+        } else if (calibrator.isBacking()) {
+          calibrator.stop();
+          writeSpi((Command*) &sequenceRest[1]);
+        } else {
+          writeSpi(calibrator.getForwardCommand());
+        }
+      } else if (cmdQueue.isEmpty()) {
         writeSpi((Command*) &sequenceRest[1]);
       } else {
         writeSpi(cmdQueue.popTail());

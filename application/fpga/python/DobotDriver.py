@@ -8,7 +8,7 @@ Find firmware and SDK at https://github.com/maxosprojects/open-dobot
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 0.4.0
+Version: 0.5.0
 
 License: MIT
 """
@@ -26,6 +26,8 @@ CMD_STEPS = 1
 CMD_EXEC_QUEUE = 2
 CMD_GET_ACCELS = 3
 CMD_SWITCH_TO_ACCEL_REPORT_MODE = 4
+CMD_CALIBRATE_JOINT = 5
+CMD_EMERGENCY_STOP = 6
 
 piToDegrees = 180.0 / math.pi
 halfPi = math.pi / 2.0
@@ -206,8 +208,8 @@ class DobotDriver:
 			for c in write_commands:
 				c[0](c[1])
 
-			# self._writebyte(val)
-			if self._writechecksum():
+			self._writechecksum()
+			if self._readchecksumword():
 				return True
 			trys -= 1
 		return False
@@ -226,6 +228,12 @@ class DobotDriver:
 
 	def _write14(self, cmd, val1, val2):
 		return self._write(cmd, [(self._writebyte, val1), (self._writelong, val2)])
+
+	def _write14411(self, cmd, val1, val2, val3, val4):
+		return self._write(cmd, [(self._writelong, val1),
+									(self._writelong, val2),
+									(self._writebyte, val3),
+									(self._writebyte, val4)])
 
 	def _write_read(self, cmd, write_commands):
 		tries = _max_trys
@@ -291,15 +299,52 @@ class DobotDriver:
 		except ValueError:
 			return halfPi
 
+	def CalibrateJoint(self, joint, forwardCommand, backwardCommand, direction, pin, pinMode, pullup):
+		'''
+		Initiates joint calibration procedure using a limit switch/photointerrupter. Effective immediately.
+		Current command buffer is cleared.
+		Cancel the procedure by issuing EmergencyStop() is necessary.
+		
+		@param joint - which joint to calibrate: 1-3
+		@param forwardCommand - command to send to the joint when moving forward (towards limit switch);
+				use freqToCmdVal()
+		@param backwardCommand - command to send to the joint after hitting  (towards limit switch);
+				use freqToCmdVal()
+		@param direction - direction to move joint towards limit switch/photointerrupter: 0-1
+		@param pin - firmware internal pin reference number that limit switch is connected to;
+					refer to dobot.h -> calibrationPins
+		@param pinMode - limit switch/photointerrupter normal LOW = 0, normal HIGH = 1
+		@param pullup - enable pullup on the pin = 1, disable = 0
+		@return True if command succesfully received, False otherwise.
+		'''
+		if 1 > joint > 3:
+			return False
+		control = ((pinMode & 0x01) << 4) | ((pullup & 0x01) << 3) | ((direction & 0x01) << 2) | ((joint - 1) & 0x03)
+		self._lock.acquire()
+		result = self._write14411(CMD_CALIBRATE_JOINT, forwardCommand, backwardCommand, pin, control)
+		self._lock.release()
+		return result
+
+	def EmergencyStop(self):
+		'''
+		Stops the arm in case of emergency. Clears command buffer and cancels calibration procedure.
+
+		@return True if command succesfully received, False otherwise.
+		'''
+		self._lock.acquire()
+		result = self._write0(CMD_EMERGENCY_STOP)
+		self._lock.release()
+		return result
+
 	def Steps(self, j1, j2, j3, j1dir, j2dir, j3dir, deferred=False):
 		'''
 		Adds a command to the controller's queue to execute on FPGA.
-		@param j1 - joint1 magic number
-		@param j2 - joint2 magic number
-		@param j3 - joint3 magic number
-		@param j1dir - direction for joint1
-		@param j2dir - direction for joint2
-		@param j3dir - direction for joint3
+		@param j1 - joint1 subcommand
+		@param j2 - joint2 subcommand
+		@param j3 - joint3 subcommand
+		@param j1dir - direction for joint1: 0-1
+		@param j2dir - direction for joint2: 0-1
+		@param j3dir - direction for joint3: 0-1
 		@param deferred - defer execution of this command and all commands issued after this until
 						the "ExecQueue" command is issued.
 		@return Returns a tuple where the first element tells whether the command has been successfully

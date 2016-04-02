@@ -20,7 +20,7 @@ in move (with the "Laser Adjustment" button) it has to be re-initialized and SDK
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 0.4.0
+Version: 0.5.0
 
 License: MIT
 """
@@ -75,61 +75,6 @@ class Dobot:
 			for arg in args:
 				print arg,
 			print
-
-	def moveTo(self, x, y, z, duration):
-		'''
-		Moves the arm to the location with provided coordinates. Makes sure it takes exactly
-		the amount of time provided in "duration" argument to get end effector to the location.
-		All axes arrive at the same time.
-		SDK keeps track of the current end effector pose.
-		The origin is at the arm's base (the rotating base plate - joint1).
-		Refer to docs/images/arm-description.png and docs/images/reference-frame.png to find
-		more about reference frame and arm names.
-		Current limitations:
-		- rear arm cannot go beyond initial 90 degrees (backwards from initial vertical position),
-		  so plan carefully the coordinates
-		- forearm cannot go above initial horizontal position
-		Not yet implemented:
-		- the move is not linear as motors run the whole path at constant speed
-		- acceleration/deceleration
-		- rear arm cannot go beyond 90 degrees (see current limitations) and there are no checks
-		  for that - it will simply go opposite direction instead
-		'''
-		xx = float(x)
-		yy = float(y)
-		zz = float(z)
-		moveToAngles = self._ik.convert_cartesian_coordinate_to_arm_angles(xx, yy, zz)
-		# check that inverse kinematics did not run into a range error.
-		# If it does, it should return -999 for all angles, so check that.
-		if moveToAngles[0] == -999:
-			print 'Unreachable'
-			return
-
-		self._debug('ik base angle', moveToAngles[0])
-		self._debug('ik rear angle', moveToAngles[1])
-		self._debug('ik fore angle', moveToAngles[2])
-
-		moveToRearArmAngleFloat = moveToAngles[1]
-		moveToForeArmAngleFloat = moveToAngles[2]
-
-		transformedRearArmAngle = 90.0 - moveToRearArmAngleFloat
-		# -90 different from c++ code, accounts for fact that arm starts at the c++ simulation's 90
-		# note that this line is different from the similar line in the move angles function.
-		# Has to do with the inverse kinematics function and the fact that the forearm angle is
-		# calculated relative to the rear arm angle.
-		transformedForeArmAngle = 270.0 + transformedRearArmAngle - moveToForeArmAngleFloat
-		self._debug('transformed rear angle', transformedRearArmAngle)
-		self._debug('transformed fore angle', transformedForeArmAngle)
-
-		# check that the final angles are mechanically valid. note that this check only considers final
-		# angles, and not angles while the arm is moving
-		# need to pass in real world angles
-		# real world base and rear arm angles are those returned by the ik function.
-		# real world fore arm angle is -1 * transformedForeArmAngle
-		if not self._ik.check_for_angle_limits_is_valid(moveToAngles[0], moveToAngles[1], -1 * transformedForeArmAngle):
-			return
-
-		self._moveArmToAngles(moveToAngles[0], transformedRearArmAngle, transformedForeArmAngle, duration)
 
 	def _moveArmToAngles(self, baseAngle, rearArmAngle, foreArmAngle, duration):
 		self._baseAngle = baseAngle
@@ -190,4 +135,76 @@ class Dobot:
 			ret.append(self._driver.stepsToCmdVal(chunk))
 		return ret
 
+	def freqToCmdVal(self, freq):
+		'''
+		See DobotDriver.freqToCmdVal()
+		'''
+		return self._driver.freqToCmdVal(freq)
 
+	def moveTo(self, x, y, z, duration):
+		'''
+		Moves the arm to the location with provided coordinates. Makes sure it takes exactly
+		the amount of time provided in "duration" argument to get end effector to the location.
+		All axes arrive at the same time.
+		SDK keeps track of the current end effector pose.
+		The origin is at the arm's base (the rotating base plate - joint1).
+		Refer to docs/images/arm-description.png and docs/images/reference-frame.png to find
+		more about reference frame and arm names.
+		Current limitations:
+		- rear arm cannot go beyond initial 90 degrees (backwards from initial vertical position),
+		  so plan carefully the coordinates
+		- forearm cannot go above initial horizontal position
+		Not yet implemented:
+		- the move is not linear as motors run the whole path at constant speed
+		- acceleration/deceleration
+		- rear arm cannot go beyond 90 degrees (see current limitations) and there are no checks
+		  for that - it will simply go opposite direction instead
+		'''
+		xx = float(x)
+		yy = float(y)
+		zz = float(z)
+		moveToAngles = self._ik.convert_cartesian_coordinate_to_arm_angles(xx, yy, zz)
+		# check that inverse kinematics did not run into a range error.
+		# If it does, it should return -999 for all angles, so check that.
+		if moveToAngles[0] == -999:
+			print 'Unreachable'
+			return
+
+		self._debug('ik base angle', moveToAngles[0])
+		self._debug('ik rear angle', moveToAngles[1])
+		self._debug('ik fore angle', moveToAngles[2])
+
+		moveToRearArmAngleFloat = moveToAngles[1]
+		moveToForeArmAngleFloat = moveToAngles[2]
+
+		transformedRearArmAngle = 90.0 - moveToRearArmAngleFloat
+		# -90 different from c++ code, accounts for fact that arm starts at the c++ simulation's 90
+		# note that this line is different from the similar line in the move angles function.
+		# Has to do with the inverse kinematics function and the fact that the forearm angle is
+		# calculated relative to the rear arm angle.
+		transformedForeArmAngle = 270.0 + transformedRearArmAngle - moveToForeArmAngleFloat
+		self._debug('transformed rear angle', transformedRearArmAngle)
+		self._debug('transformed fore angle', transformedForeArmAngle)
+
+		# check that the final angles are mechanically valid. note that this check only considers final
+		# angles, and not angles while the arm is moving
+		# need to pass in real world angles
+		# real world base and rear arm angles are those returned by the ik function.
+		# real world fore arm angle is -1 * transformedForeArmAngle
+		if not self._ik.check_for_angle_limits_is_valid(moveToAngles[0], moveToAngles[1], -1 * transformedForeArmAngle):
+			return
+
+		self._moveArmToAngles(moveToAngles[0], transformedRearArmAngle, transformedForeArmAngle, duration)
+
+	def CalibrateJoint(self, joint, forwardCommand, backwardCommand, direction, pin, pinMode, pullup):
+		'''
+		See DobotDriver.CalibrateJoint()
+		'''
+		return self._driver.CalibrateJoint(joint, forwardCommand, backwardCommand, direction, pin, pinMode, pullup)
+
+	def EmergencyStop(self):
+		'''
+		See DobotDriver.EmergencyStop()
+		'''
+
+		return self._driver.EmergencyStop()
