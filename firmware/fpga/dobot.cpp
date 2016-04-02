@@ -11,7 +11,7 @@ Version: 0.5.0
 License: MIT
 */
 
-#define DEBUG
+// #define DEBUG
 
 #define F_CPU 16000000UL
 #define BAUD 115200
