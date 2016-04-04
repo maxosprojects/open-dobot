@@ -49,6 +49,7 @@ lengthForeArm = 160.0
 armSquaredConst = pow(lengthRearArm, 2) + pow(lengthForeArm, 2)
 armDoubledConst = 2.0 * lengthRearArm * lengthForeArm
 radiansToDegrees = 180.0 / math.pi
+degreesToRadians = math.pi / 180.0
 
 class DobotInverseKinematics:
 	def __init__(self, debug=False):
@@ -84,8 +85,7 @@ class DobotInverseKinematics:
 		rearArmAngle = armAngles[0]
 		foreArmAngle = armAngles[1]
 
-		#convert the angles to degrees when you return them
-		return [baseAngle * radiansToDegrees, rearArmAngle * radiansToDegrees, foreArmAngle * radiansToDegrees]
+		return [baseAngle, rearArmAngle, foreArmAngle]
 
 	def get_arm_angles_from_radius_z_coordinate_using_2d_revolute_revolute_inverse_kinematics(self, r, z):
 
@@ -95,10 +95,14 @@ class DobotInverseKinematics:
 		#the two angles are due to the two possible angles, elbow up or down. I always want elbow up.
 		#Not sure which one is elbow up, guessing it's the positive sqrt equation for now. CHECK THIS!
 		#note that pi radians = 180 degrees
-		foreArmAngle = math.pi - math.atan2(math.sqrt(1 - pow(eq, 2)), eq)
+
+		# foreArmAngle = math.pi - math.atan2(math.sqrt(1 - pow(eq, 2)), eq)
+
 		#including the angle two
-		foreArmAngleAlternative = math.pi - math.atan2(-1 * math.sqrt(1 - pow(eq,2)), eq )
-		foreArmAngle = foreArmAngleAlternative
+		# foreArmAngleAlternative = math.pi - math.atan2(-1 * math.sqrt(1 - pow(eq,2)), eq )
+		# foreArmAngle = foreArmAngleAlternative
+
+		foreArmAngle = math.pi - math.atan2(-1 * math.sqrt(1 - pow(eq,2)), eq )
 
 		#note that the rearArmAngle is dependent on the foreArmAngle. This makes sense.
 		# can easily envision that rear arm would be at two different angles if arm is elbow up or down
@@ -168,6 +172,15 @@ class DobotInverseKinematics:
 			ret = False
 
 		return ret
+
+	def getCoordinatesFromAngles(self, baseAngle, rearArmAngle, foreArmAngle):
+
+		radius = lengthRearArm * math.cos(rearArmAngle) + lengthForeArm * math.cos(foreArmAngle)
+		x = radius * math.cos(baseAngle)
+		y = radius * math.sin(baseAngle)
+		z = lengthRearArm * math.sin(rearArmAngle) + heightFromBase - lengthForeArm * math.sin(foreArmAngle)
+
+		return (x, y, z)
 
 """
 	# get polar coordinates for the current point

@@ -17,22 +17,32 @@ to execute until the queue (200 commands) is empty.
 
 from DobotSDK import Dobot
 
+# for i in range(10):
+# dobot = Dobot('/dev/tty.usbmodem1421', debug=True, fake=True)
 dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 
 duration = 1
 
-dobot.moveTo(160.0, 0.0, 60.0, duration)
-print '======================================'
-for i in range(3):
-	dobot.moveTo(160.0, 60.0, 60.0, duration)
-	print '======================================'
-	dobot.moveTo(220.0, 60.0, 60.0, duration)
-	print '======================================'
-	dobot.moveTo(220.0, -60.0, 60.0, duration)
-	print '======================================'
-	dobot.moveTo(160.0, -60.0, 60.0, duration)
-	print '======================================'
-dobot.moveTo(160.0, 0.0, 60.0, duration)
-print '======================================'
-dobot.moveTo(160.0, 0.0, 215.0, duration)
-print '======================================'
+# dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 1, 5, 1, 0)
+# dobot.moveWithSpeed(160.0, -100.0, 215.0, 100)
+dobot.moveWithSpeed(160.0, -100.0, 62.0, 100)
+
+# dobot.moveTo(120.0, 0.0, 120.0, duration)
+# dobot.moveTo(150.0, 0.0, 120.0, duration)
+# dobot.moveTo(150.0, 0.0, 210.0, duration)
+# dobot.moveTo(160.0, 0.0, 215.0, duration)
+
+# print '======================================'
+# for i in range(3):
+# 	dobot.moveTo(160.0, 60.0, 60.0, duration)
+# 	print '======================================'
+# 	dobot.moveTo(220.0, 60.0, 60.0, duration)
+# 	print '======================================'
+# 	dobot.moveTo(220.0, -60.0, 60.0, duration)
+# 	print '======================================'
+# 	dobot.moveTo(160.0, -60.0, 60.0, duration)
+# 	print '======================================'
+# dobot.moveTo(160.0, 0.0, 60.0, duration)
+# print '======================================'
+# dobot.moveTo(160.0, 0.0, 215.0, duration)
+# print '======================================'

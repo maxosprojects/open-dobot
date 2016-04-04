@@ -278,7 +278,7 @@ class DobotDriver:
 		Converts stepping frequency into a command value that dobot takes.
 		'''
 		if freq == 0:
-			return 0x0242f000;
+			return 0x0242f000
 		return self.reverseBits32(long(25000000/freq))
 
 	def stepsToCmdVal(self, steps):
@@ -287,8 +287,29 @@ class DobotDriver:
 		takes to set the stepping frequency.
 		'''
 		if steps == 0:
-			return 0x0242f000;
+			return 0x0242f000
 		return self.reverseBits32(long(500000/steps))
+
+	def stepsToCmdValFloat(self, steps):
+		'''
+		Converts number of steps for dobot to do in 20ms into a command value that dobot
+		takes to set the stepping frequency.
+
+		@param steps - float number of steps; float to minimize error and have finer control
+		@return tuple (command_value, leftover), where leftover is the fractioned steps that don't fit
+				into 20ms interval a command runs for
+		'''
+		if steps < 0.01:
+			return (0x0242f000, 0, 0.0)
+		val = 500000.0 / steps
+		valLong = long(math.ceil(val))
+		# valLong = long(val)
+		actualSteps = long(500000.0 / valLong)
+		if valLong == 0:
+			return (0x0242f000, 0, steps)
+		if actualSteps == 0:
+			return (0x0242f000, 0, steps)
+		return (self.reverseBits32(valLong), actualSteps, steps - actualSteps)
 
 	def accelToAngle(self, val, offset):
 		return self.accelToRadians(val, offset) * piToDegrees
