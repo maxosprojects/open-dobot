@@ -20,6 +20,7 @@ number_of_steps = 600Hz * 20ms = 600 * 0.02 = 12
 '''
 
 from DobotDriver import DobotDriver
+import time
 
 driver = DobotDriver('/dev/tty.usbmodem1421')
 driver.Open()
@@ -36,6 +37,15 @@ while True:
 		raise Exception('Comm problem')
 
 print 'Accelerometer data returned', driver.GetAccelerometers()
+
+
+steps = driver.stepsToCmdVal(275)
+
+while True:
+	driver.SetCounters(-550, 3, 5)
+	ret = driver.Steps(steps, 0, steps, 1, 0, 1)
+	time.sleep(0.5)
+	print driver.GetCounters()
 
 freq = [
 	   0,

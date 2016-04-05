@@ -11,7 +11,7 @@ Version: 0.5.0
 License: MIT
 */
 
-// #define DEBUG
+#define DEBUG
 
 #define F_CPU 16000000UL
 #define BAUD 115200
@@ -42,8 +42,7 @@ License: MIT
 
 #define CMD_QUEUE_SIZE     200
 
-CommandQueue cmdQueue(CMD_QUEUE_SIZE);
-Calibrator calibrator;
+#define GET_MOTOR_DIRECTION(X) ((prevMotorDirections >> X) & 0x01)
 
 #define CMD_READY 0
 #define CMD_STEPS 1
@@ -52,10 +51,15 @@ Calibrator calibrator;
 #define CMD_SWITCH_TO_ACCEL_REPORT_MODE 4
 #define CMD_CALIBRATE_JOINT 5
 #define CMD_EMERGENCY_STOP 6
+#define CMD_SET_COUNTERS 7
+#define CMD_GET_COUNTERS 8
 // DO NOT FORGET TO UPDATE cmdArray SIZE!
-funcPtrs cmdArray[7];
+funcPtrs cmdArray[9];
 // Last index in the commands pointers array.
 int cmdPtrArrayLastIndex;
+
+CommandQueue cmdQueue(CMD_QUEUE_SIZE);
+Calibrator calibrator;
 
 // Buffer to read command into.
 byte cmd[20];
@@ -65,6 +69,12 @@ byte crc[2];
 
 // ulong lastTimeExecuted = 0;
 byte defer = 1;
+
+byte prevMotorDirections = 0;
+byte currMotorDirections = 0;
+long motorPositionBase = 0;
+long motorPositionRear = 0;
+long motorPositionFore = 0;
 
 unsigned int accelRear;
 unsigned int accelFront;
@@ -78,6 +88,8 @@ void setup() {
   cmdArray[CMD_SWITCH_TO_ACCEL_REPORT_MODE] = cmdSwitchToAccelReportMode;
   cmdArray[CMD_CALIBRATE_JOINT] = cmdCalibrateJoint;
   cmdArray[CMD_EMERGENCY_STOP] = cmdEmergencyStop;
+  cmdArray[CMD_SET_COUNTERS] = cmdSetCounters;
+  cmdArray[CMD_GET_COUNTERS] = cmdGetCounters;
   cmdPtrArrayLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
 
   serialInit();
@@ -149,7 +161,8 @@ void setup() {
   // Power-on step 11
   SPI_DDR = (1<<SPI_MISO);
   // CPOL=0, CPHA=1 - Trailing (Falling) Edge
-  SPCR = _BV(SPE) | _BV(CPHA);
+  // DORD = 1 - LSB first
+  SPCR = _BV(SPE) | _BV(DORD) | _BV(CPHA);
 
   // Power-on step 12
   FPGA_ENABLE_PORT |= (1<<FPGA_ENABLE_PIN);
@@ -285,6 +298,41 @@ byte cmdEmergencyStop() {
   return 1;
 }
 
+// CMD: Sets joint counters to the received values.
+byte cmdSetCounters() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 15) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 13)) {
+    return 0;
+  }
+  // motorPositionBase = (long) cmd[1];
+  // motorPositionRear = (long) cmd[5];
+  // motorPositionFore = (long) cmd[9];
+  motorPositionBase = ((long)cmd[1] << 24) | ((long)cmd[2] << 16) | ((long)cmd[3] << 8) | (long)cmd[4];
+  motorPositionRear = ((long)cmd[5] << 24) | ((long)cmd[6] << 16) | ((long)cmd[7] << 8) | (long)cmd[8];
+  motorPositionFore = ((long)cmd[9] << 24) | ((long)cmd[10] << 16) | ((long)cmd[11] << 8) | (long)cmd[12];
+  debug(motorPositionBase);
+  write0();
+  return 1;
+}
+
+// CMD: Returns current counters for all joints.
+byte cmdGetCounters() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 3) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 1)) {
+    return 0;
+  }
+  write444(cmd, (ulong*)&motorPositionBase, (ulong*)&motorPositionRear, (ulong*)&motorPositionFore);
+  return 1;
+}
+
 // CMD: Executes deferred commands in the queue.
 byte cmdExecQueue() {
   // Check if not enough bytes yet.
@@ -367,6 +415,7 @@ void initDebug() {
   UCSR1B = _BV(RXEN1) | _BV(TXEN1);   /* Enable RX and TX */
 
   // DDRD |= (1<<PORTD3);
+  DDRH |= (1<<PORTH5);
 #endif
 }
 
@@ -385,8 +434,20 @@ inline void debug(byte c) {
 #ifdef DEBUG
   loop_until_bit_is_set(UCSR1A, UDRE1);
   UDR1 = c;
+#endif
+}
+
+inline void debugOn() {
+#ifdef DEBUG
   // PORTD |= (1<<PORTD3);
+  PORTH |= (1<<PORTH5);
+#endif
+}
+
+inline void debugOff() {
+#ifdef DEBUG
   // PORTD &= ~(1<<PORTD3);
+  PORTH &= ~(1<<PORTH5);
 #endif
 }
 
@@ -502,6 +563,23 @@ byte write4(byte data[]) {
   serialWrite(data, 6);
 }
 
+byte write4Continue(byte data[], ulong* val) {
+  data[0] = (byte) (*val >> 24) & 0xff;
+  data[1] = (byte) (*val >> 16) & 0xff;
+  data[2] = (byte) (*val >> 8) & 0xff;
+  data[3] = (byte) *val & 0xff;
+}
+
+byte write444(byte data[], ulong* val1, ulong* val2, ulong* val3) {
+  write4Continue(&data[0], val1);
+  write4Continue(&data[4], val2);
+  write4Continue(&data[8], val3);
+  crcCcitt(data, 12, 1);
+  data[12] = crc[0];
+  data[13] = crc[1];
+  serialWrite(data, 14);
+}
+
 int dataToInt(byte data[]) {
   int result = ((((uint16_t) data[0]) << 8) & 0xFF00) | (((uint16_t) data[1]) & 0x00FF);
   return result;
@@ -560,9 +638,9 @@ void crcCcitt(byte data[], int len, byte keepSeed) {
 inline void writeSpiByte(byte data) {
   byte junk;
 
-  SPDR = data;
   loop_until_bit_is_set(SPSR, SPIF);
   junk = SPDR;
+  SPDR = data;
   serialRead();
 }
 
@@ -570,9 +648,9 @@ void writeSpi(Command* cmd) {
   byte* data = (byte*)cmd;
 
   FPGA_COMMAND_PORT |= (1<<FPGA_COMMAND_PIN);
-  loop_until_bit_is_set(SPSR, SPIF);
+  SPDR = sequenceRest[0];
 
-  writeSpiByte(sequenceRest[0]);
+  // writeSpiByte(sequenceRest[0]);
   for (byte i = 0; i < 13; i++) {
     writeSpiByte(data[i]);
   }
@@ -581,7 +659,58 @@ void writeSpi(Command* cmd) {
   writeSpiByte(sequenceRest[16]);
   writeSpiByte(sequenceRest[17]);
   writeSpiByte(sequenceRest[18]);
+  loop_until_bit_is_set(SPSR, SPIF);
   FPGA_COMMAND_PORT &= ~(1<<FPGA_COMMAND_PIN);
+  prevMotorDirections = currMotorDirections;
+  currMotorDirections = data[12];
+}
+
+inline byte readSpiByte() {
+  loop_until_bit_is_set(SPSR, SPIF);
+  return SPDR;
+}
+
+inline uint readSpiWord() {
+  uint data;
+  loop_until_bit_is_set(SPSR, SPIF);
+  data = SPDR;
+  serialRead();
+  loop_until_bit_is_set(SPSR, SPIF);
+  data |= (SPDR << 8);
+  serialRead();
+  return data;
+}
+
+// Reads a word of two bytes per joint.
+// Each word is the number of steps joint just finished traveling (issued a command before).
+inline void readSpi() {
+  uint data;
+
+  data = SPSR;
+  data = SPDR;
+
+  data = (readSpiWord() + 1) / 2;
+  if (GET_MOTOR_DIRECTION(0)) {
+    motorPositionBase += data;
+  } else {
+    motorPositionBase -= data;
+  }
+
+  data = (readSpiWord() + 1) / 2;
+  if (GET_MOTOR_DIRECTION(1)) {
+    motorPositionRear += data;
+  } else {
+    motorPositionRear -= data;
+  }
+
+  data = (readSpiWord() + 1) / 2;
+  if (GET_MOTOR_DIRECTION(2)) {
+    motorPositionFore += data;
+  } else {
+    motorPositionFore -= data;
+  }
+
+  data = readSpiByte();
 }
 
 int main() {
@@ -590,8 +719,9 @@ int main() {
   byte i = 0;
   byte data;
   while (1) {
-    if (SPDR == 0x5a) {
+    if (SPDR == 0xa5) {
       SPDR = 0x00;
+      readSpi();
       if (calibrator.isRunning()) {
         if (calibrator.isHit()) {
           if (calibrator.isBacking()) {

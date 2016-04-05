@@ -78,6 +78,11 @@ class Dobot:
 			self._baseSteps = long(0)
 			self._rearSteps = long((rearAngle / math.pi / 2.0) * rearArmActualStepsPerRevolution + 0.5)
 			self._foreSteps = long((foreAngle / math.pi / 2.0) * foreArmActualStepsPerRevolution + 0.5)
+			self._driver.SetCounters(self._baseSteps, self._rearSteps, self._foreSteps)
+			print "Initializing with steps:", self._baseSteps, self._rearSteps, self._foreSteps
+			print "Reading back what was set:", self._driver.GetCounters()
+			print "--=========--"
+
 
 	def _debug(self, *args):
 		if self._debugOn:
@@ -342,6 +347,13 @@ class Dobot:
 			self._baseSteps += movedStepsBase
 			self._rearSteps += movedStepsRear
 			self._foreSteps += movedStepsFore
+
+			time.sleep(0.1)
+			print "--==STEPS==--"
+			print self._baseSteps, self._rearSteps, self._foreSteps
+			print self._driver.GetCounters()
+			print "--=========--"
+
 			# toPlot1.append(self._baseSteps)
 			# toPlot2.append(self._rearSteps)
 			# toPlot3.append(self._foreSteps)

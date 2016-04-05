@@ -28,10 +28,14 @@ CMD_GET_ACCELS = 3
 CMD_SWITCH_TO_ACCEL_REPORT_MODE = 4
 CMD_CALIBRATE_JOINT = 5
 CMD_EMERGENCY_STOP = 6
+CMD_SET_COUNTERS = 7
+CMD_GET_COUNTERS = 8
 
 piToDegrees = 180.0 / math.pi
 halfPi = math.pi / 2.0
 
+# stopSeq = 0x0242f000
+stopSeq = 0x40420f00
 
 class DobotDriver:
 	def __init__(self, comport, rate=115200):
@@ -160,6 +164,21 @@ class DobotDriver:
 			trys -= 1
 		return (0,0)
 
+	def _read4(self, cmd):
+		trys = _max_trys
+		while trys:
+			self._port.flushInput()
+			self._sendcommand(cmd)
+			val1 = self._readlong()
+			if val1[0]:
+				crc = self._readchecksumword()
+				if crc[0]:
+					if self._crc&0xFFFF!=crc[1]&0xFFFF:
+						return (0,0)
+					return (1,val1[1])
+			trys -= 1
+		return (0,0)
+
 	def _read4_1(self, cmd):
 		trys = _max_trys
 		while trys:
@@ -176,6 +195,26 @@ class DobotDriver:
 						return (1,val1[1],val2[1])
 			trys -= 1
 		return (0,0)
+
+	def _reads444(self, cmd):
+		trys = _max_trys
+		while trys:
+			self._port.flushInput()
+			self._sendcommand(cmd)
+			self._writechecksum()
+			val1 = self._readslong()
+			if val1[0]:
+				val2 = self._readslong()
+				if val2[0]:
+					val3 = self._readslong()
+					if val3[0]:
+						crc = self._readchecksumword()
+						if crc[0]:
+							if self._crc&0xFFFF!=crc[1]&0xFFFF:
+								return (0,0,0,0)
+							return (1,val1[1],val2[1],val3[1])
+			trys -= 1
+		return (0,0,0,0)
 
 	def _writebyte(self, val):
 		self._crc_update(val&0xFF)
@@ -235,6 +274,11 @@ class DobotDriver:
 									(self._writebyte, val3),
 									(self._writebyte, val4)])
 
+	def _write444(self, cmd, val1, val2, val3):
+		return self._write(cmd, [(self._writelong, val1),
+									(self._writelong, val2),
+									(self._writelong, val3)])
+
 	def _write_read(self, cmd, write_commands):
 		tries = _max_trys
 		while tries:
@@ -270,15 +314,18 @@ class DobotDriver:
 									(self._writebyte, val4)])
 
 	def reverseBits32(self, val):
-		# return long(bin(val&0xFFFFFFFF)[:1:-1], 2)
-		return int('{0:032b}'.format(val)[::-1], 2)
+		### return long(bin(val&0xFFFFFFFF)[:1:-1], 2)
+		# return int('{0:032b}'.format(val)[::-1], 2)
+		# Not reversing bits in bytes any more as SPI switched to LSB first.
+		# But still need to reverse bytes places.
+		return ((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24)
 
 	def freqToCmdVal(self, freq):
 		'''
 		Converts stepping frequency into a command value that dobot takes.
 		'''
 		if freq == 0:
-			return 0x0242f000
+			return stopSeq
 		return self.reverseBits32(long(25000000/freq))
 
 	def stepsToCmdVal(self, steps):
@@ -287,7 +334,7 @@ class DobotDriver:
 		takes to set the stepping frequency.
 		'''
 		if steps == 0:
-			return 0x0242f000
+			return stopSeq
 		return self.reverseBits32(long(500000/steps))
 
 	def stepsToCmdValFloat(self, steps):
@@ -300,15 +347,15 @@ class DobotDriver:
 				into 20ms interval a command runs for
 		'''
 		if steps < 0.01:
-			return (0x0242f000, 0, 0.0)
+			return (0x000f4240, 0, 0.0)
 		val = 500000.0 / steps
 		valLong = long(math.ceil(val))
 		# valLong = long(val)
 		actualSteps = long(500000.0 / valLong)
 		if valLong == 0:
-			return (0x0242f000, 0, steps)
+			return (0x000f4240, 0, steps)
 		if actualSteps == 0:
-			return (0x0242f000, 0, steps)
+			return (0x000f4240, 0, steps)
 		return (self.reverseBits32(valLong), actualSteps, steps - actualSteps)
 
 	def accelToAngle(self, val, offset):
@@ -372,7 +419,7 @@ class DobotDriver:
 		received (0 - yes, 1 - timed out), and the second element tells whether the command was added
 		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
 		'''
-		control = ((j1dir & 0x01) << 7) | ((j2dir & 0x01) << 6) | ((j3dir & 0x01) << 5);
+		control = (j1dir & 0x01) | ((j2dir & 0x01) << 1) | ((j3dir & 0x01) << 2);
 		# if deferred:
 		# 	control |= 0x01
 		self._lock.acquire()
@@ -398,6 +445,22 @@ class DobotDriver:
 		'''
 		self._lock.acquire()
 		result = self._read22(CMD_GET_ACCELS)
+		self._lock.release()
+		return result
+
+	def GetCounters(self):
+		'''
+		'''
+		self._lock.acquire()
+		result = self._reads444(CMD_GET_COUNTERS)
+		self._lock.release()
+		return result
+
+	def SetCounters(self, base, rear, fore):
+		'''
+		'''
+		self._lock.acquire()
+		result = self._write444(CMD_SET_COUNTERS, base, rear, fore)
 		self._lock.release()
 		return result
 
