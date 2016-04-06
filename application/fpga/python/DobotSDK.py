@@ -70,6 +70,9 @@ class Dobot:
 			self._rearSteps = long(0)
 			self._foreSteps = long(0)
 		else:
+			# self._baseSteps = long(0)
+			# self._rearSteps = long(0)
+			# self._foreSteps = long(0)
 			accels = self._driver.GetAccelerometers()
 			accelRear = accels[1]
 			accelFore = accels[2]
@@ -197,7 +200,10 @@ class Dobot:
 		cmdForeVal, actualStepsFore, leftStepsFore = self._driver.stepsToCmdValFloat(foreDiffAbs)
 
 		if not self._fake:
-			self._driver.Steps(cmdBaseVal, cmdRearVal, cmdForeVal, baseDir, rearDir, foreDir)
+			# Repeat until the command is buffered. May not be buffered if buffer is full.
+			ret = (0, 0)
+			while not ret[1]:
+				ret = self._driver.Steps(cmdBaseVal, cmdRearVal, cmdForeVal, baseDir, rearDir, foreDir)
 
 		return (actualStepsBase * baseSign, actualStepsRear * rearSign, actualStepsFore * foreSign,\
 					leftStepsBase * baseSign, leftStepsRear * rearSign, leftStepsFore * foreSign)
@@ -259,6 +265,9 @@ class Dobot:
 		toPlot4 = []
 		toPlot5 = []
 		toPlot6 = []
+		toPlot7 = []
+		toPlot8 = []
+		toPlot9 = []
 		while commands < slices:
 		 # or abs(leftStepsBase) > 0 or abs(leftStepsRear) > 0 or abs(leftStepsFore) > 0:
 			nextX = currX + sliceX * commands
@@ -316,8 +325,6 @@ class Dobot:
 			self._debug('r', r)
 			z2 = nextZ - (80.0 + 23.0)
 			self._debug('z2', z2)
-			# h = math.sqrt(math.pow(z2, 2) * math.pow(r, 2)) / 2.0
-			# self._debug('h', h)
 			d2 = math.pow(z2, 2) + math.pow(r, 2)
 			d = math.sqrt(d2)
 			self._debug('d', d)
@@ -348,11 +355,11 @@ class Dobot:
 			self._rearSteps += movedStepsRear
 			self._foreSteps += movedStepsFore
 
-			time.sleep(0.1)
-			print "--==STEPS==--"
-			print self._baseSteps, self._rearSteps, self._foreSteps
-			print self._driver.GetCounters()
-			print "--=========--"
+			# time.sleep(0.1)
+			# print "--==STEPS==--"
+			# print self._baseSteps, self._rearSteps, self._foreSteps
+			# print self._driver.GetCounters()
+			# print "--=========--"
 
 			# toPlot1.append(self._baseSteps)
 			# toPlot2.append(self._rearSteps)
@@ -367,21 +374,33 @@ class Dobot:
 			toPlot4.append(nextX)
 			toPlot5.append(nextY)
 			toPlot6.append(nextZ)
+			toPlot7.append(cX - nextX)
+			toPlot8.append(cY - nextY)
+			toPlot9.append(cZ - nextZ)
 
 
 		linewidth = 1.0
 		# line, = plt.plot(toPlot, 'ro')
-		plt.subplot(211)
+		# line.set_antialiased(False)
+		plt.subplot(131)
 		line, = plt.plot(toPlot4, linewidth=linewidth)
 		line, = plt.plot(toPlot5, linewidth=linewidth)
 		line, = plt.plot(toPlot6, linewidth=linewidth)
-		plt.subplot(212)
+		plt.subplot(132)
 		line, = plt.plot(toPlot1, linewidth=linewidth)
-		# line.set_antialiased(False)
 		line, = plt.plot(toPlot2, linewidth=linewidth)
 		line, = plt.plot(toPlot3, linewidth=linewidth)
+		plt.subplot(133)
+		line, = plt.plot(toPlot7, linewidth=linewidth)
+		line, = plt.plot(toPlot8, linewidth=linewidth)
+		line, = plt.plot(toPlot9, linewidth=linewidth)
 		# plt.ylabel('some numbers')
 		# plt.show()
+		# print "--==LAST STEPS READING==--"
+		# time.sleep(5)
+		# print self._baseSteps, self._rearSteps, self._foreSteps
+		# print self._driver.GetCounters()
+		# print "--=========--"
 
 
 	def moveTo(self, x, y, z, duration):

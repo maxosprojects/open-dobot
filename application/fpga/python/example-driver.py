@@ -36,16 +36,37 @@ while True:
 	if i > 100:
 		raise Exception('Comm problem')
 
+
+driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(0), driver.stepsToCmdVal(14), 1, 1, 0)
+driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(1), driver.stepsToCmdVal(14), 1, 1, 0)
+driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(3), driver.stepsToCmdVal(15), 1, 1, 0)
+time.sleep(2)
+print driver.GetCounters()
+
+exit(0)
+
+
 print 'Accelerometer data returned', driver.GetAccelerometers()
 
 
-steps = driver.stepsToCmdVal(275)
+steps1 = driver.stepsToCmdVal(27)
+steps2 = driver.stepsToCmdVal(3)
+steps3 = driver.stepsToCmdVal(14)
+driver.SetCounters(0, 0, 0)
 
-while True:
-	driver.SetCounters(-550, 3, 5)
-	ret = driver.Steps(steps, 0, steps, 1, 0, 1)
-	time.sleep(0.5)
-	print driver.GetCounters()
+errors = 0
+for i in range(20):
+	ret = (0, 0)
+	while not ret[1]:
+		ret = driver.Steps(steps1, steps2, steps3, 1, 0, 1)
+	if not ret[1]:
+		errors += 1
+		print 'Error', errors
+time.sleep(6)
+print 27*20, 3*20, 14*20
+print driver.GetCounters()
+
+exit(0)
 
 freq = [
 	   0,

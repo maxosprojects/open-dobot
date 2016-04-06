@@ -34,8 +34,8 @@ CMD_GET_COUNTERS = 8
 piToDegrees = 180.0 / math.pi
 halfPi = math.pi / 2.0
 
-# stopSeq = 0x0242f000
-stopSeq = 0x40420f00
+stopSeq = 0x0242f000
+# stopSeq = 0x40420f00
 
 class DobotDriver:
 	def __init__(self, comport, rate=115200):
@@ -346,17 +346,15 @@ class DobotDriver:
 		@return tuple (command_value, leftover), where leftover is the fractioned steps that don't fit
 				into 20ms interval a command runs for
 		'''
-		if steps < 0.01:
-			return (0x000f4240, 0, 0.0)
-		val = 500000.0 / steps
-		valLong = long(math.ceil(val))
-		# valLong = long(val)
-		actualSteps = long(500000.0 / valLong)
-		if valLong == 0:
-			return (0x000f4240, 0, steps)
+		if abs(steps) < 0.01:
+			return (stopSeq, 0, 0.0)
+		actualSteps = long(round(steps))
 		if actualSteps == 0:
-			return (0x000f4240, 0, steps)
-		return (self.reverseBits32(valLong), actualSteps, steps - actualSteps)
+			return (stopSeq, 0, steps)
+		val = long(500000 / actualSteps)
+		if val == 0:
+			return (stopSeq, 0, steps)
+		return (self.reverseBits32(val), actualSteps, steps - actualSteps)
 
 	def accelToAngle(self, val, offset):
 		return self.accelToRadians(val, offset) * piToDegrees

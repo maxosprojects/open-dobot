@@ -11,7 +11,7 @@ Version: 0.5.0
 License: MIT
 */
 
-#define DEBUG
+// #define DEBUG
 
 #define F_CPU 16000000UL
 #define BAUD 115200
@@ -314,7 +314,6 @@ byte cmdSetCounters() {
   motorPositionBase = ((long)cmd[1] << 24) | ((long)cmd[2] << 16) | ((long)cmd[3] << 8) | (long)cmd[4];
   motorPositionRear = ((long)cmd[5] << 24) | ((long)cmd[6] << 16) | ((long)cmd[7] << 8) | (long)cmd[8];
   motorPositionFore = ((long)cmd[9] << 24) | ((long)cmd[10] << 16) | ((long)cmd[11] << 8) | (long)cmd[12];
-  debug(motorPositionBase);
   write0();
   return 1;
 }
@@ -681,6 +680,9 @@ inline uint readSpiWord() {
   return data;
 }
 
+byte lastData1;
+byte lastData2;
+byte lastData3;
 // Reads a word of two bytes per joint.
 // Each word is the number of steps joint just finished traveling (issued a command before).
 inline void readSpi() {
@@ -695,6 +697,7 @@ inline void readSpi() {
   } else {
     motorPositionBase -= data;
   }
+  lastData1 = data;
 
   data = (readSpiWord() + 1) / 2;
   if (GET_MOTOR_DIRECTION(1)) {
@@ -702,13 +705,15 @@ inline void readSpi() {
   } else {
     motorPositionRear -= data;
   }
+  lastData2 = data;
 
   data = (readSpiWord() + 1) / 2;
   if (GET_MOTOR_DIRECTION(2)) {
-    motorPositionFore += data;
-  } else {
     motorPositionFore -= data;
+  } else {
+    motorPositionFore += data;
   }
+  lastData3 = data;
 
   data = readSpiByte();
 }
@@ -740,6 +745,9 @@ int main() {
         writeSpi((Command*) &sequenceRest[1]);
       } else {
         writeSpi(cmdQueue.popTail());
+        debug(lastData1);
+        debug(lastData2);
+        debug(lastData3);
       }
       processSerialBuffer();
     } else {

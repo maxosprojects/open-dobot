@@ -42,7 +42,7 @@ default working angle units are radians
 """
 
 #length and height dimensions in mm
-heightFromBase = 80.0
+heightFromBase = 80.0 + 23.0
 lengthRearArm = 135.0
 lengthForeArm = 160.0
 
