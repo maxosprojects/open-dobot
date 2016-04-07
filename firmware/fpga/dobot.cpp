@@ -53,8 +53,9 @@ License: MIT
 #define CMD_EMERGENCY_STOP 6
 #define CMD_SET_COUNTERS 7
 #define CMD_GET_COUNTERS 8
+#define CMD_LASER_ON 9
 // DO NOT FORGET TO UPDATE cmdArray SIZE!
-funcPtrs cmdArray[9];
+funcPtrs cmdArray[10];
 // Last index in the commands pointers array.
 int cmdPtrArrayLastIndex;
 
@@ -90,6 +91,7 @@ void setup() {
   cmdArray[CMD_EMERGENCY_STOP] = cmdEmergencyStop;
   cmdArray[CMD_SET_COUNTERS] = cmdSetCounters;
   cmdArray[CMD_GET_COUNTERS] = cmdGetCounters;
+  cmdArray[CMD_LASER_ON] = cmdLaserOn;
   cmdPtrArrayLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
 
   serialInit();
@@ -166,6 +168,9 @@ void setup() {
 
   // Power-on step 12
   FPGA_ENABLE_PORT |= (1<<FPGA_ENABLE_PIN);
+
+  // Set up laser port.
+  DDRB |= 1<<PB6;
 
 #ifdef DEBUG
   initDebug();
@@ -329,6 +334,26 @@ byte cmdGetCounters() {
     return 0;
   }
   write444(cmd, (ulong*)&motorPositionBase, (ulong*)&motorPositionRear, (ulong*)&motorPositionFore);
+  return 1;
+}
+
+// CMD: Enables/Disables Laser
+byte cmdLaserOn() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 4) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 2)) {
+    return 0;
+  }
+  byte on = cmd[1];
+  if (on) {
+    PORTB |= 1<<PB6;
+  } else {
+    PORTB &= ~(1<<PB6);
+  }
+  write0();
   return 1;
 }
 

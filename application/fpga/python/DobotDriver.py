@@ -30,6 +30,7 @@ CMD_CALIBRATE_JOINT = 5
 CMD_EMERGENCY_STOP = 6
 CMD_SET_COUNTERS = 7
 CMD_GET_COUNTERS = 8
+CMD_LASER_ON = 9
 
 piToDegrees = 180.0 / math.pi
 halfPi = math.pi / 2.0
@@ -479,6 +480,17 @@ class DobotDriver:
 		raise NotImplementedError('Read function description for more info')
 		self._lock.acquire()
 		result = self._write_read(CMD_SWITCH_TO_ACCEL_REPORT_MODE, [])
+		self._lock.release()
+		return result
+
+	def LaserOn(self, on):
+		'''
+		'''
+		self._lock.acquire()
+		if on:
+			result = self._write1(CMD_LASER_ON, 1)
+		else:
+			result = self._write1(CMD_LASER_ON, 0)
 		self._lock.release()
 		return result
 

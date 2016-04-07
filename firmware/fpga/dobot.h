@@ -57,6 +57,7 @@ byte cmdCalibrateJoint();
 byte cmdEmergencyStop();
 byte cmdSetCounters();
 byte cmdGetCounters();
+byte cmdLaserOn();
 void crcCcitt(byte data[], int len);
 void crcCcitt(byte data[], int len, byte keepSeed);
 byte read13(byte data[]);
@@ -195,8 +196,8 @@ class Calibrator {
         pullup = (control >> 3) & 0x01;
         pinMode = (control >> 4) & 0x01;
         // direction
-        fwdCmd.control = (control & 0x04) << (5 - joint);
-        backCmd.control = (~control & 0x04) << (5 - joint);
+        fwdCmd.control = (control & 0x04) >> (2 - joint);
+        backCmd.control = (~control & 0x04) >> (5 - joint);
         memset(&fwdCmd, 0, 12);
         memset(&backCmd, 0, 12);
         ulong *ptr;

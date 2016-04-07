@@ -23,9 +23,12 @@ dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 
 duration = 1
 
-while True:
-	dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 0, 5, 1, 0)
-	dobot.moveWithSpeed(160.0, -100.0, 80.0, 100)
+# dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 0, 5, 1, 0)
+# while True:
+dobot.moveWithSpeed(200.0, -50.0, 44.0, 100)
+dobot.moveWithSpeed(200.0, 50.0, 44.0, 100)
+dobot.moveWithSpeed(200.0, -50.0, 44.0, 100)
+dobot.moveWithSpeed(200.0, 0.0, 44.0, 100)
 
 # dobot.moveWithSpeed(160.0, 0.0, 115.0, 100)
 # dobot.moveWithSpeed(160.0, 0.0, 215.0, 100)

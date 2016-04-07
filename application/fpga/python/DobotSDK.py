@@ -316,30 +316,44 @@ class Dobot:
 			'''
 			radiansToDegrees = 180.0 / math.pi
 
-			b = 135.0
-			c = 160.0
-			b2 = math.pow(b, 2)
-			c2 = math.pow(c, 2)
+			lengthRearArm = 135.0
+			lengthForearm = 160.0
+			# Distance from joint3 to the center of the tool mounted on the end effector.
+			distanceTool = 50.9
+			lengthRearSquared = math.pow(lengthRearArm, 2)
+			lengthForeSquared = math.pow(lengthForearm, 2)
 
-			r = math.sqrt(math.pow(nextX, 2) + math.pow(nextY, 2))
-			self._debug('r', r)
-			z2 = nextZ - (80.0 + 23.0)
-			self._debug('z2', z2)
-			d2 = math.pow(z2, 2) + math.pow(r, 2)
-			d = math.sqrt(d2)
-			self._debug('d', d)
-			self._debug('d2', d2)
-
-			q1 = math.atan2(z2, r)
-			self._debug('q1', q1, q1 * radiansToDegrees)
-			q2 = math.acos((b2 - c2 + d2) / (2.0 * b * d))
-			self._debug('q2', q2, q2 * radiansToDegrees)
-			rearAngle = piHalf - (q1 + q2)
-			self._debug('ik rear angle', rearAngle, rearAngle * radiansToDegrees)
-			foreAngle = piHalf - (math.acos((b2 + c2 - d2) / (2.0 * b * c)) - rearAngle)
-			self._debug('ik fore angle', foreAngle, foreAngle * radiansToDegrees)
+			# Radius to the center of the tool.
+			radiusTool = math.sqrt(math.pow(nextX, 2) + math.pow(nextY, 2))
+			self._debug('radiusTool', radiusTool)
+			# Radius to joint3.
+			radius = radiusTool - distanceTool
+			self._debug('radius', radius)
 			baseAngle = math.atan2(nextY, nextX)
-			self._debug('ik base angle', baseAngle, baseAngle * radiansToDegrees)
+			self._debug('ik base angle', baseAngle)
+			# X coordinate of joint3.
+			jointX = radius * math.cos(baseAngle)
+			self._debug('jointX', jointX)
+			# Y coordinate of joint3.
+			jointY = radius * math.sin(baseAngle)
+			self._debug('jointY', jointY)
+			actualZ = nextZ - (80.0 + 23.0)
+			self._debug('actualZ', actualZ)
+			# Imaginary segment connecting joint1 with joint2, squared.
+			hypotenuseSquared = math.pow(actualZ, 2) + math.pow(radius, 2)
+			hypotenuse = math.sqrt(hypotenuseSquared)
+			self._debug('hypotenuse', hypotenuse)
+			self._debug('hypotenuseSquared', hypotenuseSquared)
+
+			q1 = math.atan2(actualZ, radius)
+			self._debug('q1', q1)
+			q2 = math.acos((lengthRearSquared - lengthForeSquared + hypotenuseSquared) / (2.0 * lengthRearArm * hypotenuse))
+			self._debug('q2', q2)
+			rearAngle = piHalf - (q1 + q2)
+			self._debug('ik rear angle', rearAngle)
+			foreAngle = piHalf - (math.acos((lengthRearSquared + lengthForeSquared - hypotenuseSquared) / (2.0 * lengthRearArm * lengthForearm)) - rearAngle)
+			self._debug('ik fore angle', foreAngle)
+
 
 ################
 			movedStepsBase, movedStepsRear, movedStepsFore, leftStepsBase, leftStepsRear, leftStepsFore = \
@@ -505,3 +519,8 @@ class Dobot:
 		'''
 
 		return self._driver.EmergencyStop()
+
+	def LaserOn(self, on):
+		self._driver.LaserOn(on)
+
+

@@ -45,6 +45,7 @@ default working angle units are radians
 heightFromBase = 80.0 + 23.0
 lengthRearArm = 135.0
 lengthForeArm = 160.0
+distToTool = 50.9
 
 armSquaredConst = pow(lengthRearArm, 2) + pow(lengthForeArm, 2)
 armDoubledConst = 2.0 * lengthRearArm * lengthForeArm
@@ -135,18 +136,6 @@ class DobotInverseKinematics:
 		distanceToEndPoint = math.sqrt( pow(x,2) + pow(y,2) + pow(z,2) )
 		return distanceToEndPoint
 
-	def get_rear_arm_angle(self):
-		#return the angle in degrees or radians for the rear arm from the accelerometer data and/or known theoretical angle
-		return 45#or radians!
-
-	def get_fore_arm_angle(self):
-		#return the angle in degrees or radians for the forearm from the accelerometer data and/or known theoretical angle
-		return 45#or radians!
-
-	def get_base_angle(self):
-		#return the angle in degrees or radians for the base from the accelerometer data and/or known theoretical angle
-		return 45#or radians!
-
 	# angles passed as arguments here should be real world angles (horizontal = 0, below is negative, above is positive)
 	# i.e. they should be set up the same way as the unit circle is
 	def check_for_angle_limits_is_valid(self, baseAngle, rearArmAngle, foreArmAngle):
@@ -175,41 +164,12 @@ class DobotInverseKinematics:
 
 	def getCoordinatesFromAngles(self, baseAngle, rearArmAngle, foreArmAngle):
 
-		radius = lengthRearArm * math.cos(rearArmAngle) + lengthForeArm * math.cos(foreArmAngle)
+		radius = lengthRearArm * math.cos(rearArmAngle) + lengthForeArm * math.cos(foreArmAngle) + 50.9
 		x = radius * math.cos(baseAngle)
 		y = radius * math.sin(baseAngle)
 		z = lengthRearArm * math.sin(rearArmAngle) + heightFromBase - lengthForeArm * math.sin(foreArmAngle)
 
 		return (x, y, z)
-
-"""
-	# get polar coordinates for the current point
-	# radius is simply given by the base angle
-	# can read the angles from the IMU and empirically determine the radius and angle - I'm using this approach
-	# since it should account for any build up in error, assuming accelerometers are accurate!!!!
-	# alternatively can just use pythagorean thm on theoretical current x,y data
-
-	startRearArmAngle = get_rear_arm_angle
-	startForeArmAngle = get_fore_arm_angle
-	startBaseAngle = get_base_angle
-
-	#could abstract this next bit into a 2D forward kinematics function and then just use the horizontal data returned
-	#only care about the radius, so
-
-
-	currentPosPolarCoordRadius = ???
-	currentPosPolarCoordAngle = currentBaseAngle
-
-
-	#end get polar coordinates
-
-
-def get_radius_in_horizontal_plane_to_cartesian_end_effector_position_using_2d_revolute_revolute_forward_kinematics(rearArmAngle, foreArmAngle, rearArmLength, foreArmLength):
-	#the equation for radius is determined using forward kinematics, just uses socahtoa rules, namely coa here.
-	radius = ( math.cos(rearArmAngle) * rearArmLength ) + ( math.cos(rearArmAngle + foreArmAngle) * foreArmLength )
-	return radius
-
-"""
 
 
 if __name__ == '__main__':
