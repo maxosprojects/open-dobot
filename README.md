@@ -1,8 +1,8 @@
-Official open-dobot forum is at http://open-dobot.no-ip.org
+Check out the official [open-dobot forum](http://open-dobot.no-ip.org)
 
 # Table of Contents
 1. [What is open-dobot](#what-is-open-dobot)
-2. [Why?](#why)
+2. [Why? ...or the original firmware problems](#why)
    1. [Protocol](#protocol)
    2. [The "Arduino-based" joke](#arduino-joke)
 3. [Features implemented so far](#features-implemented-so-far)
@@ -50,7 +50,7 @@ The fact that the Arduino board does not actually control the arm but delegates 
 # Prerequisites
 ~~The simplest way to overcome the above problems and bring full control over the arm seems to be by replacing the top board (that contains FPGA) with a cheap (around $10) RAMPS1.4 board. By doing so we get direct control of the stepper drivers from Arduino and the rest becomes a matter of creating a simple firmware.~~
 
-**With the latest advancements in figuring out the FPGA on the top board firmware/fpga version 0.2.0 requires NO changes to hardware and is ready to replace original firmware by simply uploading it with dobot-tools https://github.com/maxosprojects/open-dobot/releases/tag/0.2.0**
+**With having completely decoded the protocol to directly control the top FPGA board the firmware starting from 0.2.0 and on requires NO changes to hardware and is ready to replace original firmware by simply flashing it to the bottom Arduino board. See [Installation](#installation)**
 
 You will only need:
 - [DobotTools](http://dobot.cc/download.php) or avrdude directly (included in Arduino IDE) to flash the firmware
