@@ -91,7 +91,7 @@ Don't mind the soldering, it may not be required at all.~~
 3. Planned - connect end effectors (mechanical gripper, vacuum gripper, laser, etc.)
 4. Planned - connect the accelerometers. This will enable firmware to read the current (initial or at any time at rest) arm configuration~~
 
-**firmware/fpga version 0.2.0 requires NO changes to hardware and is ready to replace original firmware by simply uploading it with dobot-tools https://github.com/maxosprojects/open-dobot/releases/tag/0.2.0**
+**firmware/fpga version 0.2.0 and up requires NO changes to hardware and is ready to replace original firmware by simply uploading it with dobot-tools**
 
 ### Firmware
 1. Design:
