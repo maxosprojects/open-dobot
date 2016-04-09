@@ -21,25 +21,23 @@ from DobotSDK import Dobot
 # dobot = Dobot('/dev/tty.usbmodem1421', debug=True, fake=True)
 dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 
-duration = 1
-
-# dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 0, 5, 1, 0)
-# while True:
-dobot.moveWithSpeed(200.0, -50.0, 44.0, 100)
-dobot.moveWithSpeed(200.0, 50.0, 44.0, 100)
-dobot.moveWithSpeed(200.0, -50.0, 44.0, 100)
-dobot.moveWithSpeed(200.0, 0.0, 44.0, 100)
+dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 1, 5, 1, 0)
+while True:
+	dobot.moveWithSpeed(200.0, 80.0, 60, 400, 300)
+	dobot.moveWithSpeed(200.0, 80.0, 40, 400, 300)
+	dobot.moveWithSpeed(200.0, 80.0, 60, 400, 300)
+	dobot.moveWithSpeed(200.0, -80.0, 60, 400, 300)
+	dobot.moveWithSpeed(200.0, -80.0, 40, 400, 300)
+	dobot.moveWithSpeed(200.0, -80.0, 60, 400, 300)
+# dobot.moveWithSpeed(200.0, 50.0, 44.0, 100)
+# dobot.moveWithSpeed(200.0, -50.0, 44.0, 100)
+# dobot.moveWithSpeed(200.0, 0.0, 44.0, 100)
 
 # dobot.moveWithSpeed(160.0, 0.0, 115.0, 100)
 # dobot.moveWithSpeed(160.0, 0.0, 215.0, 100)
 # dobot.moveWithSpeed(160.0, 0.0, 115.0, 100)
 # dobot.moveWithSpeed(120.0, 0.0, 115.0, 100)
 # dobot.moveWithSpeed(160.0, -100.0, 215.0, 100)
-
-# dobot.moveTo(120.0, 0.0, 120.0, duration)
-# dobot.moveTo(150.0, 0.0, 120.0, duration)
-# dobot.moveTo(150.0, 0.0, 210.0, duration)
-# dobot.moveTo(160.0, 0.0, 215.0, duration)
 
 # print '======================================'
 # for i in range(3):

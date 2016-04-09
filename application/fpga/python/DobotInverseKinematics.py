@@ -162,14 +162,6 @@ class DobotInverseKinematics:
 
 		return ret
 
-	def getCoordinatesFromAngles(self, baseAngle, rearArmAngle, foreArmAngle):
-
-		radius = lengthRearArm * math.cos(rearArmAngle) + lengthForeArm * math.cos(foreArmAngle) + 50.9
-		x = radius * math.cos(baseAngle)
-		y = radius * math.sin(baseAngle)
-		z = lengthRearArm * math.sin(rearArmAngle) + heightFromBase - lengthForeArm * math.sin(foreArmAngle)
-
-		return (x, y, z)
 
 
 if __name__ == '__main__':
