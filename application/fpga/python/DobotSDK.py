@@ -83,19 +83,7 @@ class Dobot:
 			# self._baseSteps = long(0)
 			# self._rearSteps = long(0)
 			# self._foreSteps = long(0)
-			accels = self._driver.GetAccelerometers()
-			accelRear = accels[1]
-			accelFore = accels[2]
-			rearAngle = math.pi / 2 - self._driver.accelToRadians(accelRear, accelOffsets[0])
-			foreAngle = self._driver.accelToRadians(accelFore, accelOffsets[1])
-			self._baseSteps = long(0)
-			self._rearSteps = long((rearAngle / math.pi / 2.0) * rearArmActualStepsPerRevolution + 0.5)
-			self._foreSteps = long((foreAngle / math.pi / 2.0) * foreArmActualStepsPerRevolution + 0.5)
-			self._driver.SetCounters(self._baseSteps, self._rearSteps, self._foreSteps)
-			print "Initializing with steps:", self._baseSteps, self._rearSteps, self._foreSteps
-			print "Reading back what was set:", self._driver.GetCounters()
-			print "--=========--"
-
+			self._initializeAccelerometers()
 
 	def _debug(self, *args):
 		if self._debugOn:
@@ -104,6 +92,25 @@ class Dobot:
 			for arg in args:
 				print arg,
 			print
+
+	def _initializeAccelerometers(self):
+		print "--=========--"
+		accels = self._driver.GetAccelerometers()
+		accelRear = accels[1]
+		accelFore = accels[2]
+		rearAngle = math.pi / 2 - self._driver.accelToRadians(accelRear, accelOffsets[0])
+		foreAngle = self._driver.accelToRadians(accelFore, accelOffsets[1])
+		self._baseSteps = long(0)
+		self._rearSteps = long((rearAngle / math.pi / 2.0) * rearArmActualStepsPerRevolution + 0.5)
+		self._foreSteps = long((foreAngle / math.pi / 2.0) * foreArmActualStepsPerRevolution + 0.5)
+		self._driver.SetCounters(self._baseSteps, self._rearSteps, self._foreSteps)
+		print "Initializing with steps:", self._baseSteps, self._rearSteps, self._foreSteps
+		print "Reading back what was set:", self._driver.GetCounters()
+		currBaseAngle = piTwo * self._baseSteps / baseActualStepsPerRevolution
+		currRearAngle = piHalf - piTwo * self._rearSteps / rearArmActualStepsPerRevolution
+		currForeAngle = piTwo * self._foreSteps / foreArmActualStepsPerRevolution
+		print 'Current estimated coordinates:', self._getCoordinatesFromAngles(currBaseAngle, currRearAngle, currForeAngle)
+		print "--=========--"
 
 	def _moveArmToAngles(self, baseAngle, rearArmAngle, foreArmAngle, duration):
 		self._baseAngle = baseAngle

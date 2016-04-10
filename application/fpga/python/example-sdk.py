@@ -16,40 +16,86 @@ to execute until the queue (200 commands) is empty.
 '''
 
 from DobotSDK import Dobot
+import time
 
-# for i in range(10):
+# The top Z to go to.
+up = 50
+# The bottom Z to go to.
+down = 39
+# Maximum speed in mm/s
+speed = 700
+# Acceleration in mm/s^2
+acceleration = 400
+
 # dobot = Dobot('/dev/tty.usbmodem1421', debug=True, fake=True)
 dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 
-dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 1, 5, 1, 0)
-while True:
-	dobot.moveWithSpeed(200.0, 80.0, 60, 400, 300)
-	dobot.moveWithSpeed(200.0, 80.0, 40, 400, 300)
-	dobot.moveWithSpeed(200.0, 80.0, 60, 400, 300)
-	dobot.moveWithSpeed(200.0, -80.0, 60, 400, 300)
-	dobot.moveWithSpeed(200.0, -80.0, 40, 400, 300)
-	dobot.moveWithSpeed(200.0, -80.0, 60, 400, 300)
-# dobot.moveWithSpeed(200.0, 50.0, 44.0, 100)
-# dobot.moveWithSpeed(200.0, -50.0, 44.0, 100)
-# dobot.moveWithSpeed(200.0, 0.0, 44.0, 100)
+# Enable calibration routine if you have a limit switch/photointerrupter installed on the arm.
+# See example-switch.py for details.
+# Move both arms to approximately 45 degrees.
+# dobot.moveWithSpeed(260.0, 0.0, 85, 700, acceleration)
+# time.sleep(2)
+# dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 1, 5, 1, 0)
 
-# dobot.moveWithSpeed(160.0, 0.0, 115.0, 100)
-# dobot.moveWithSpeed(160.0, 0.0, 215.0, 100)
-# dobot.moveWithSpeed(160.0, 0.0, 115.0, 100)
-# dobot.moveWithSpeed(120.0, 0.0, 115.0, 100)
-# dobot.moveWithSpeed(160.0, -100.0, 215.0, 100)
+# Line
+# dobot.moveWithSpeed(200.0, 80.0, up, speed, acceleration)
+# dobot.moveWithSpeed(200.0, 80.0, down, speed, acceleration)
+# dobot.moveWithSpeed(200.0, -90.0, down, speed, acceleration)
+# dobot.moveWithSpeed(200.0, -90.0, up, speed, acceleration)
 
-# print '======================================'
-# for i in range(3):
-# 	dobot.moveTo(160.0, 60.0, 60.0, duration)
-# 	print '======================================'
-# 	dobot.moveTo(220.0, 60.0, 60.0, duration)
-# 	print '======================================'
-# 	dobot.moveTo(220.0, -60.0, 60.0, duration)
-# 	print '======================================'
-# 	dobot.moveTo(160.0, -60.0, 60.0, duration)
-# 	print '======================================'
-# dobot.moveTo(160.0, 0.0, 60.0, duration)
-# print '======================================'
-# dobot.moveTo(160.0, 0.0, 215.0, duration)
-# print '======================================'
+# dobot.moveWithSpeed(200.0, -90.0, down, speed, acceleration)
+# dobot.moveWithSpeed(200.0, 80.0, down, speed, acceleration)
+# dobot.moveWithSpeed(200.0, 80.0, up, speed, acceleration)
+# dobot.moveWithSpeed(200.0, -90.0, up, speed, acceleration)
+
+# Rectangle with zig-zag inside
+dobot.moveWithSpeed(170.0, -90.0, up, speed, acceleration)
+dobot.moveWithSpeed(170.0, -90.0, down, speed, acceleration)
+dobot.moveWithSpeed(170.0, 80.0, down, speed, acceleration)
+dobot.moveWithSpeed(230.0, 80.0, down, speed, acceleration)
+dobot.moveWithSpeed(230.0, -90.0, down, speed, acceleration)
+dobot.moveWithSpeed(170.0, -90.0, down, speed, acceleration)
+x = 230
+y = 0
+for y in range(-90, 81, 5):
+	if x == 170:
+		x = 230
+	else:
+		x = 170
+	dobot.moveWithSpeed(x, y, down, speed, acceleration)
+
+dobot.moveWithSpeed(x, y, up, speed, acceleration)
+dobot.moveWithSpeed(200.0, -90.0, up, speed, acceleration)
+
+# Jog
+# while True:
+# 	dobot.moveWithSpeed(200.0, 80.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 80.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 80.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 80.0, 200, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -80.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -80.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -80.0, up, speed, acceleration)
+
+# Dashed line
+# while True:
+# 	dobot.moveWithSpeed(200.0, 80.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 80.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 70.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 70.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 40.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 40.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 30.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 30.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 0.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, 0.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -10.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -10.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -40.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -40.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -50.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -50.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -80.0, up, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -80.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -90.0, down, speed, acceleration)
+# 	dobot.moveWithSpeed(200.0, -90.0, up, speed, acceleration)
