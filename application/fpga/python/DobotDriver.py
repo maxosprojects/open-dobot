@@ -249,8 +249,10 @@ class DobotDriver:
 				c[0](c[1])
 
 			self._writechecksum()
-			if self._readchecksumword():
-				return True
+			crc = self._readchecksumword()
+			if crc[0]:
+				if self._crc&0xFFFF == crc[1]&0xFFFF:
+					return True
 			trys -= 1
 		return False
 
