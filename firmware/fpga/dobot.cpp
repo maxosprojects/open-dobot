@@ -54,8 +54,10 @@ License: MIT
 #define CMD_SET_COUNTERS 7
 #define CMD_GET_COUNTERS 8
 #define CMD_LASER_ON 9
+#define CMD_PUMP_ON 10
+#define CMD_VALVE_ON 11
 // DO NOT FORGET TO UPDATE cmdArray SIZE!
-funcPtrs cmdArray[10];
+funcPtrs cmdArray[12];
 // Last index in the commands pointers array.
 int cmdPtrArrayLastIndex;
 
@@ -92,6 +94,8 @@ void setup() {
   cmdArray[CMD_SET_COUNTERS] = cmdSetCounters;
   cmdArray[CMD_GET_COUNTERS] = cmdGetCounters;
   cmdArray[CMD_LASER_ON] = cmdLaserOn;
+  cmdArray[CMD_PUMP_ON] = cmdPumpOn;
+  cmdArray[CMD_VALVE_ON] = cmdValveOn;
   cmdPtrArrayLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
 
   serialInit();
@@ -171,6 +175,12 @@ void setup() {
 
   // Set up laser port.
   DDRB |= 1<<PB6;
+  
+  // set up pump port
+  DDRG |= 1<<PG0;
+  
+  // set up valve port
+  DDRL |= 1<<PL6;
 
 #ifdef DEBUG
   initDebug();
@@ -352,6 +362,46 @@ byte cmdLaserOn() {
     PORTB |= 1<<PB6;
   } else {
     PORTB &= ~(1<<PB6);
+  }
+  write0();
+  return 1;
+}
+
+// CMD: Enables/Disables Pump
+byte cmdPumpOn() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 4) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 2)) {
+    return 0;
+  }
+  byte on = cmd[1];
+  if (on) {
+    PORTG |= 1<<PG0;
+  } else {
+    PORTG &= ~(1<<PG0);
+  }
+  write0();
+  return 1;
+}
+
+// CMD: Enables/Disables Valve
+byte cmdValveOn() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 4) {
+    return 0;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 2)) {
+    return 0;
+  }
+  byte on = cmd[1];
+  if (on) {
+    PORTL |= 1<<PL6;
+  } else {
+    PORTL &= ~(1<<PL6);
   }
   write0();
   return 1;

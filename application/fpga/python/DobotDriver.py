@@ -31,6 +31,8 @@ CMD_EMERGENCY_STOP = 6
 CMD_SET_COUNTERS = 7
 CMD_GET_COUNTERS = 8
 CMD_LASER_ON = 9
+CMD_PUMP_ON = 10
+CMD_VALVE_ON = 11
 
 piToDegrees = 180.0 / math.pi
 halfPi = math.pi / 2.0
@@ -495,6 +497,29 @@ class DobotDriver:
 			result = self._write1(CMD_LASER_ON, 0)
 		self._lock.release()
 		return result
+	
+	def PumpOn(self, on):
+		'''
+		'''
+		self._lock.acquire()
+		if on:
+			result = self._write1(CMD_PUMP_ON, 1)
+		else:
+			result = self._write1(CMD_PUMP_ON, 0)
+		self._lock.release()
+		return result
+	
+	def ValveOn(self, on):
+		'''
+		'''
+		self._lock.acquire()
+		if on:
+			result = self._write1(CMD_VALVE_ON, 1)
+		else:
+			result = self._write1(CMD_VALVE_ON, 0)
+		self._lock.release()
+		return result
+
 
 	def isReady(self):
 		'''

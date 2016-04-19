@@ -58,6 +58,8 @@ byte cmdEmergencyStop();
 byte cmdSetCounters();
 byte cmdGetCounters();
 byte cmdLaserOn();
+byte cmdPumpOn();
+byte cmdValveOn();
 void crcCcitt(byte data[], int len);
 void crcCcitt(byte data[], int len, byte keepSeed);
 byte read13(byte data[]);
