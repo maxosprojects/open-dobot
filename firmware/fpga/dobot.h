@@ -77,8 +77,8 @@ void serialRead();
 byte serialReadNum(byte data[], byte num);
 uint accelRead(unsigned char pin);
 void initDebug();
-void debug(byte c);
-void debugPrint(char const *str);
+void debugOn();
+void debugOff();
 
 // Rest
 volatile byte sequenceRest[19] = {
@@ -104,7 +104,7 @@ volatile byte sequenceRest[19] = {
 };
 
 /*
- * This is the list of pins unused py the top board (FPGA board).
+ * This is the list of pins unused by the top board (FPGA board).
  * !!!!! BEFORE CHANGING ANY OF THESE:  !!!!!!
  * 1. Check you're not targeting USART pins
  * 2. Check you're not targeting any communication and control pins

@@ -29,6 +29,7 @@ acceleration = 400
 
 # dobot = Dobot('/dev/tty.usbmodem1421', debug=True, fake=True)
 dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
+# dobot = Dobot('/dev/tty.BT4-SPP-SerialPort', debug=True, timeout=0.3)
 
 # Enable calibration routine if you have a limit switch/photointerrupter installed on the arm.
 # See example-switch.py for details.

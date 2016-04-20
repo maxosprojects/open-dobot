@@ -40,7 +40,7 @@ License: MIT
 #define FPGA_COMMAND_ACCEL_REAR_SS_PIN PORTL2
 #define FPGA_COMMAND_ACCEL_FRONT_SS_PIN PORTL4
 
-#define CMD_QUEUE_SIZE     200
+#define CMD_QUEUE_SIZE 200
 
 #define GET_MOTOR_DIRECTION(X) ((prevMotorDirections >> X) & 0x01)
 
@@ -80,6 +80,11 @@ long motorPositionFore = 0;
 unsigned int accelRear;
 unsigned int accelFront;
 byte accelReportMode = 0;
+
+volatile byte* serialControlPort;
+byte serialControlRxBit;
+byte serialControlTxBit;
+volatile byte* serialCommPort;
 
 void setup() {
   cmdArray[CMD_READY] = cmdReady;
@@ -313,9 +318,6 @@ byte cmdSetCounters() {
   if (!checkCrc(cmd, 13)) {
     return 0;
   }
-  // motorPositionBase = (long) cmd[1];
-  // motorPositionRear = (long) cmd[5];
-  // motorPositionFore = (long) cmd[9];
   motorPositionBase = ((long)cmd[1] << 24) | ((long)cmd[2] << 16) | ((long)cmd[3] << 8) | (long)cmd[4];
   motorPositionRear = ((long)cmd[5] << 24) | ((long)cmd[6] << 16) | ((long)cmd[7] << 8) | (long)cmd[8];
   motorPositionFore = ((long)cmd[9] << 24) | ((long)cmd[10] << 16) | ((long)cmd[11] << 8) | (long)cmd[12];
@@ -413,6 +415,7 @@ byte cmdSwitchToAccelReportMode() {
 }
 
 void serialInit(void) {
+  // Configure serial0
   UBRR0H = UBRRH_VALUE;
   UBRR0L = UBRRL_VALUE;
 
@@ -421,13 +424,10 @@ void serialInit(void) {
 #else
   UCSR0A &= ~(_BV(U2X0));
 #endif
-
   UCSR0C = _BV(UCSZ01) | _BV(UCSZ00); /* 8-bit data */
   UCSR0B = _BV(RXEN0) | _BV(TXEN0);   /* Enable RX and TX */
-}
 
-void initDebug() {
-#ifdef DEBUG
+  // Configure serial1
   UBRR1H = UBRRH_VALUE;
   UBRR1L = UBRRL_VALUE;
 #if USE_2X
@@ -438,52 +438,48 @@ void initDebug() {
   UCSR1C = _BV(UCSZ11) | _BV(UCSZ10); /* 8-bit data */
   UCSR1B = _BV(RXEN1) | _BV(TXEN1);   /* Enable RX and TX */
 
-  // DDRD |= (1<<PORTD3);
-  DDRH |= (1<<PORTH5);
-#endif
-}
-
-inline void debugPrint(char const *str) {
-#ifdef DEBUG
-  byte i = 0;
-  while (str[i] != 0) {
-    debug(str[i]);
-    i++;
+  // If bluetooth switch is on then communicate via bluetooth module.
+  // Otherwise communicate via USB.
+  if (PINL & (1<<PORTL1)) {
+    serialControlPort = &UCSR1A;
+    serialControlRxBit = RXC1;
+    serialControlTxBit = UDRE1;
+    serialCommPort = &UDR1;
+  } else {
+    serialControlPort = &UCSR0A;
+    serialControlRxBit = RXC0;
+    serialControlTxBit = UDRE0;
+    serialCommPort = &UDR0;
   }
-  debug(13);
-#endif
 }
 
-inline void debug(byte c) {
+void initDebug() {
 #ifdef DEBUG
-  loop_until_bit_is_set(UCSR1A, UDRE1);
-  UDR1 = c;
+  DDRH |= (1<<PORTH5);
 #endif
 }
 
 inline void debugOn() {
 #ifdef DEBUG
-  // PORTD |= (1<<PORTD3);
   PORTH |= (1<<PORTH5);
 #endif
 }
 
 inline void debugOff() {
 #ifdef DEBUG
-  // PORTD &= ~(1<<PORTD3);
   PORTH &= ~(1<<PORTH5);
 #endif
 }
 
 inline void serialWrite(byte c) {
-  loop_until_bit_is_set(UCSR0A, UDRE0);
-  UDR0 = c;
+  while (!(*serialControlPort & (1<<serialControlTxBit))) {}
+  *serialCommPort = c;
 }
 
 inline void serialWrite(byte data[], byte num) {
   for (byte i = 0; i < num; i++) {
-    loop_until_bit_is_set(UCSR0A, UDRE0);
-    UDR0 = data[i];
+    while (!(*serialControlPort & (1<<serialControlTxBit))) {}
+    *serialCommPort = data[i];
   }
 }
 
@@ -496,7 +492,7 @@ inline byte serialReadNum(byte data[], byte num) {
   byte tmp;
   while (cnt < num) {
     // Wait until data exists.
-    while (!(UCSR0A & (1<<RXC0))) {
+    while (!(*serialControlPort & (1<<serialControlRxBit))) {
       interByteTimeout++;
       transactionTimeout++;
       if (interByteTimeout > 15000 || transactionTimeout > 30000) {
@@ -504,14 +500,16 @@ inline byte serialReadNum(byte data[], byte num) {
       }
     }
     interByteTimeout = 0;
-    tmp = UDR0;
+    tmp = *serialCommPort;
     data[cnt++] = tmp;
   }
   return cnt;
 }
 
 inline void serialRead() {
-  if (UCSR0A&(1<<RXC0)) {
+  // if (*serialControlPort & (1<<serialControlRxBit)) {
+  //   cmd[cmdInBuffIndex] = *serialCommPort;
+  if (UCSR0A & (1<<RXC0)) {
     cmd[cmdInBuffIndex] = UDR0;
     if (cmdInBuffIndex < 19) {
       cmdInBuffIndex++;
@@ -705,9 +703,6 @@ inline uint readSpiWord() {
   return data;
 }
 
-byte lastData1;
-byte lastData2;
-byte lastData3;
 // Reads a word of two bytes per joint.
 // Each word is the number of steps joint just finished traveling (issued a command before).
 inline void readSpi() {
@@ -722,7 +717,6 @@ inline void readSpi() {
   } else {
     motorPositionBase -= data;
   }
-  lastData1 = data;
 
   data = (readSpiWord() + 1) / 2;
   if (GET_MOTOR_DIRECTION(1)) {
@@ -730,7 +724,6 @@ inline void readSpi() {
   } else {
     motorPositionRear -= data;
   }
-  lastData2 = data;
 
   data = (readSpiWord() + 1) / 2;
   if (GET_MOTOR_DIRECTION(2)) {
@@ -738,7 +731,6 @@ inline void readSpi() {
   } else {
     motorPositionFore += data;
   }
-  lastData3 = data;
 
   data = readSpiByte();
 }
@@ -770,9 +762,6 @@ int main() {
         writeSpi((Command*) &sequenceRest[1]);
       } else {
         writeSpi(cmdQueue.popTail());
-        debug(lastData1);
-        debug(lastData2);
-        debug(lastData3);
       }
       processSerialBuffer();
     } else {

@@ -32,6 +32,7 @@ import math
 from DobotDriver import DobotDriver
 
 driver = DobotDriver('/dev/tty.usbmodem1421', 115200)
+# driver = DobotDriver('/dev/tty.BT4-SPP-SerialPort', 115200, timeout=0.3)
 driver.Open()
 
 # Offsets must be found using this tool for your Dobot once
@@ -43,7 +44,10 @@ def toEndEffectorHeight(rear, fore):
 
 while True:
 	ret = driver.GetAccelerometers()
-	print "Rear arm: {0:10f} | Forearm: {1:10f} | End effector height: {2:10f} | Raw rear arm: {3:4d} | Raw forearm: {4:4d}".format(\
-		driver.accelToAngle(ret[1], offsets[0]), driver.accelToAngle(ret[2], offsets[1]),\
-		toEndEffectorHeight(driver.accelToRadians(ret[1], offsets[0]), driver.accelToRadians(ret[2], offsets[1])),\
-		ret[1], ret[2])
+	if ret[0]:
+		print "Rear arm: {0:10f} | Forearm: {1:10f} | End effector height: {2:10f} | Raw rear arm: {3:4d} | Raw forearm: {4:4d}".format(\
+			driver.accelToAngle(ret[1], offsets[0]), driver.accelToAngle(ret[2], offsets[1]),\
+			toEndEffectorHeight(driver.accelToRadians(ret[1], offsets[0]), driver.accelToRadians(ret[2], offsets[1])),\
+			ret[1], ret[2])
+	else:
+		print 'Error occurred reading data'

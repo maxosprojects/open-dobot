@@ -22,7 +22,8 @@ number_of_steps = 600Hz * 20ms = 600 * 0.02 = 12
 from DobotDriver import DobotDriver
 import time
 
-driver = DobotDriver('/dev/tty.usbmodem1421')
+driver = DobotDriver('/dev/tty.BT4-SPP-SerialPort')
+# driver = DobotDriver('/dev/tty.usbmodem1421')
 driver.Open()
 successes = 0
 i = 0
