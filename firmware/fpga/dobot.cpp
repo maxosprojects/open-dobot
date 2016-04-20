@@ -44,6 +44,8 @@ License: MIT
 
 #define GET_MOTOR_DIRECTION(X) ((prevMotorDirections >> X) & 0x01)
 
+#define BLUETOOTH_ENABLED (PINL & (1<<PORTL1))
+
 #define CMD_READY 0
 #define CMD_STEPS 1
 #define CMD_EXEC_QUEUE 2
@@ -80,11 +82,6 @@ long motorPositionFore = 0;
 unsigned int accelRear;
 unsigned int accelFront;
 byte accelReportMode = 0;
-
-volatile byte* serialControlPort;
-byte serialControlRxBit;
-byte serialControlTxBit;
-volatile byte* serialCommPort;
 
 void setup() {
   cmdArray[CMD_READY] = cmdReady;
@@ -437,20 +434,6 @@ void serialInit(void) {
 #endif
   UCSR1C = _BV(UCSZ11) | _BV(UCSZ10); /* 8-bit data */
   UCSR1B = _BV(RXEN1) | _BV(TXEN1);   /* Enable RX and TX */
-
-  // If bluetooth switch is on then communicate via bluetooth module.
-  // Otherwise communicate via USB.
-  if (PINL & (1<<PORTL1)) {
-    serialControlPort = &UCSR1A;
-    serialControlRxBit = RXC1;
-    serialControlTxBit = UDRE1;
-    serialCommPort = &UDR1;
-  } else {
-    serialControlPort = &UCSR0A;
-    serialControlRxBit = RXC0;
-    serialControlTxBit = UDRE0;
-    serialCommPort = &UDR0;
-  }
 }
 
 void initDebug() {
@@ -472,14 +455,26 @@ inline void debugOff() {
 }
 
 inline void serialWrite(byte c) {
-  while (!(*serialControlPort & (1<<serialControlTxBit))) {}
-  *serialCommPort = c;
+  if (BLUETOOTH_ENABLED) {
+    loop_until_bit_is_set(UCSR1A, UDRE1);
+    UDR1 = c;
+  } else {
+    loop_until_bit_is_set(UCSR0A, UDRE0);
+    UDR0 = c;
+  }
 }
 
 inline void serialWrite(byte data[], byte num) {
-  for (byte i = 0; i < num; i++) {
-    while (!(*serialControlPort & (1<<serialControlTxBit))) {}
-    *serialCommPort = data[i];
+  if (BLUETOOTH_ENABLED) {
+    for (byte i = 0; i < num; i++) {
+      loop_until_bit_is_set(UCSR1A, UDRE1);
+      UDR1 = data[i];
+    }
+  } else {
+    for (byte i = 0; i < num; i++) {
+      loop_until_bit_is_set(UCSR0A, UDRE0);
+      UDR0 = data[i];
+    }
   }
 }
 
@@ -490,29 +485,54 @@ inline byte serialReadNum(byte data[], byte num) {
   unsigned int transactionTimeout = 0;
   byte cnt = 0;
   byte tmp;
-  while (cnt < num) {
-    // Wait until data exists.
-    while (!(*serialControlPort & (1<<serialControlRxBit))) {
-      interByteTimeout++;
-      transactionTimeout++;
-      if (interByteTimeout > 15000 || transactionTimeout > 30000) {
-        return 0;
+  if (BLUETOOTH_ENABLED) {
+    while (cnt < num) {
+      // Wait until data exists.
+      while (!(UCSR1A & (1<<RXC1))) {
+        interByteTimeout++;
+        transactionTimeout++;
+        if (interByteTimeout > 15000 || transactionTimeout > 30000) {
+          return 0;
+        }
       }
+      interByteTimeout = 0;
+      tmp = UDR1;
+      data[cnt++] = tmp;
     }
-    interByteTimeout = 0;
-    tmp = *serialCommPort;
-    data[cnt++] = tmp;
+  } else {
+    while (cnt < num) {
+      // Wait until data exists.
+      while (!(UCSR0A & (1<<RXC0))) {
+        interByteTimeout++;
+        transactionTimeout++;
+        if (interByteTimeout > 15000 || transactionTimeout > 30000) {
+          return 0;
+        }
+      }
+      interByteTimeout = 0;
+      tmp = UDR0;
+      data[cnt++] = tmp;
+    }
   }
   return cnt;
 }
 
 inline void serialRead() {
-  // if (*serialControlPort & (1<<serialControlRxBit)) {
-  //   cmd[cmdInBuffIndex] = *serialCommPort;
-  if (UCSR0A & (1<<RXC0)) {
-    cmd[cmdInBuffIndex] = UDR0;
-    if (cmdInBuffIndex < 19) {
-      cmdInBuffIndex++;
+  // This is done this way for code speed optimization purposes.
+  // Don't change, otherwise SPI bytes are skipped and commands lost.
+  if (BLUETOOTH_ENABLED) {
+    if (UCSR1A & (1<<RXC1)) {
+      cmd[cmdInBuffIndex] = UDR1;
+      if (cmdInBuffIndex < 19) {
+        cmdInBuffIndex++;
+      }
+    }
+  } else {
+    if (UCSR0A & (1<<RXC0)) {
+      cmd[cmdInBuffIndex] = UDR0;
+      if (cmdInBuffIndex < 19) {
+        cmdInBuffIndex++;
+      }
     }
   }
 }
