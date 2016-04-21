@@ -496,5 +496,9 @@ class Dobot:
 
 	def LaserOn(self, on):
 		self._driver.LaserOn(on)
-
-
+	
+	def PumpOn(self, on):
+		self._driver.PumpOn(on)
+	
+	def ValveOn(self, on):
+		self._driver.ValveOn(on)
