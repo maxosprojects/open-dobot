@@ -32,8 +32,9 @@ import math
 from DobotDriver import DobotDriver
 
 driver = DobotDriver('/dev/tty.usbmodem1421', 115200)
-# driver = DobotDriver('/dev/tty.BT4-SPP-SerialPort', 115200, timeout=0.3)
 driver.Open()
+# driver = DobotDriver('/dev/tty.BT4-SPP-SerialPort', 115200)
+# driver.Open(timeout=0.3)
 
 # Offsets must be found using this tool for your Dobot once
 # (rear arm, forearm)

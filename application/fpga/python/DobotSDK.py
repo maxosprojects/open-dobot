@@ -495,10 +495,10 @@ class Dobot:
 		return self._driver.EmergencyStop()
 
 	def LaserOn(self, on):
-		self._driver.LaserOn(on)
+		return self._driver.LaserOn(on)
 	
 	def PumpOn(self, on):
-		self._driver.PumpOn(on)
+		return self._driver.PumpOn(on)
 	
 	def ValveOn(self, on):
-		self._driver.ValveOn(on)
+		return self._driver.ValveOn(on)

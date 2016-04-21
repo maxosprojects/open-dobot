@@ -1,9 +1,6 @@
 #! /usr/bin/env python
 '''
-Laser going in a straight line.
-
-!!!!! TAKE ALL POSSIBLE PRECAUTIONS TO PREVENT FIRE !!!!!
-!!!!! BE READY TO DISCONNECT THE ARM FROM POWER SOURCE AT ANY TIME !!!!!
+Take an object using sucker pump and put it in a different place.
 
 '''
 
@@ -22,9 +19,17 @@ dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 def repeatUntilQueued(on):
 	ret = (0,0)
 	while not ret[0] or not ret[1]:
-		ret = dobot.LaserOn(on)
+		ret = dobot.PumpOn(on)
+	ret = (0,0)
+	while not ret[0] or not ret[1]:
+		ret = dobot.ValveOn(on)
 
-dobot.moveWithSpeed(200.0, -50.0, 100.0, 50)
+dobot.moveWithSpeed(200.0, -50.0, 100.0, 100)
+dobot.moveWithSpeed(200.0, -50.0, 80.0, 100)
 repeatUntilQueued(True)
-dobot.moveWithSpeed(200.0, 50.0, 100.0, 0.75)
+dobot.moveWithSpeed(200.0, -50.0, 100.0, 100)
+dobot.moveWithSpeed(200.0, 50.0, 100.0, 100)
+dobot.moveWithSpeed(200.0, 50.0, 80.0, 100)
 repeatUntilQueued(False)
+dobot.moveWithSpeed(200.0, 50.0, 100.0, 100)
+dobot.moveWithSpeed(200.0, 0.0, 100.0, 100)

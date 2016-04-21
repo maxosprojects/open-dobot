@@ -305,6 +305,9 @@ class DobotDriver:
 			tries -= 1
 		return (0, 0)
 
+	def _write1read1(self, cmd, val1):
+		return self._write_read(cmd, [(self._writebyte, val1)])
+
 	def _write11121read1(self, cmd, val1, val2, val3, val4, val5):
 		return self._write_read(cmd, [(self._writebyte, val1),
 									(self._writebyte, val2),
@@ -489,37 +492,45 @@ class DobotDriver:
 
 	def LaserOn(self, on):
 		'''
+		@return Returns a tuple where the first element tells whether the command has been successfully
+		received (0 - yes, 1 - timed out), and the second element tells whether the command was added
+		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
 		'''
 		self._lock.acquire()
 		if on:
-			result = self._write1(CMD_LASER_ON, 1)
+			result = self._write1read1(CMD_LASER_ON, 1)
 		else:
-			result = self._write1(CMD_LASER_ON, 0)
+			result = self._write1read1(CMD_LASER_ON, 0)
 		self._lock.release()
 		return result
 	
 	def PumpOn(self, on):
 		'''
+		@return Returns a tuple where the first element tells whether the command has been successfully
+		received (0 - yes, 1 - timed out), and the second element tells whether the command was added
+		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
 		'''
 		self._lock.acquire()
 		if on:
-			result = self._write1(CMD_PUMP_ON, 1)
+			result = self._write1read1(CMD_PUMP_ON, 1)
 		else:
-			result = self._write1(CMD_PUMP_ON, 0)
+			result = self._write1read1(CMD_PUMP_ON, 0)
 		self._lock.release()
 		return result
 	
 	def ValveOn(self, on):
 		'''
+		@return Returns a tuple where the first element tells whether the command has been successfully
+		received (0 - yes, 1 - timed out), and the second element tells whether the command was added
+		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
 		'''
 		self._lock.acquire()
 		if on:
-			result = self._write1(CMD_VALVE_ON, 1)
+			result = self._write1read1(CMD_VALVE_ON, 1)
 		else:
-			result = self._write1(CMD_VALVE_ON, 0)
+			result = self._write1read1(CMD_VALVE_ON, 0)
 		self._lock.release()
 		return result
-
 
 	def isReady(self):
 		'''

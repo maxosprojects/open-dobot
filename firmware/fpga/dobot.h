@@ -26,6 +26,7 @@ typedef unsigned int uint;
 typedef unsigned long ulong;
 
 typedef byte(*funcPtrs)(void);
+typedef void(*implFuncPtrs)(void);
 
 // typedef struct {
 //   byte j1dir : 1;
@@ -34,12 +35,25 @@ typedef byte(*funcPtrs)(void);
 //   // byte deferred : 1;
 // } ControlByte;
 
+// DO NOT FORGET TO UPDATE implementationFunctions SIZE!
+enum CommandType {
+  Move = 0,
+  LaserOn,
+  LaserOff,
+  PumpOn,
+  PumpOff,
+  ValveOn,
+  ValveOff
+};
+implFuncPtrs implementationFunctions[7];
+
 typedef struct {
   ulong j1;
   ulong j2;
   ulong j3;
   // ControlByte control;
   byte control;
+  CommandType type;
 } Command;
 
 typedef struct {
@@ -81,6 +95,12 @@ uint accelRead(unsigned char pin);
 void initDebug();
 void debugOn();
 void debugOff();
+void laserOn();
+void laserOff();
+void pumpOn();
+void pumpOff();
+void valveOn();
+void valveOff();
 
 // Rest
 volatile byte sequenceRest[19] = {
@@ -279,12 +299,13 @@ class CommandQueue {
       size = newSize;
     };
 
-    byte appendHead(ulong *newJ1, ulong *newJ2, ulong *newJ3, byte *control) {
+    byte appendHead(ulong *newJ1, ulong *newJ2, ulong *newJ3, byte *control, CommandType type) {
       if (!isFull()) {
         queue[head].j1 = *newJ1;
         queue[head].j2 = *newJ2;
         queue[head].j3 = *newJ3;
         queue[head].control = *control;
+        queue[head].type = type;
         // queue[head].control.j1dir = (control >> 1) & 0x01;
         // queue[head].control.j2dir = (control >> 2) & 0x01;
         // queue[head].control.j3dir = (control >> 3) & 0x01;

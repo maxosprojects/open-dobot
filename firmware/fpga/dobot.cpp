@@ -100,6 +100,13 @@ void setup() {
   cmdArray[CMD_VALVE_ON] = cmdValveOn;
   cmdPtrArrayLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
 
+  implementationFunctions[LaserOn] = laserOn;
+  implementationFunctions[LaserOff] = laserOff;
+  implementationFunctions[PumpOn] = pumpOn;
+  implementationFunctions[PumpOff] = pumpOff;
+  implementationFunctions[ValveOn] = valveOn;
+  implementationFunctions[ValveOff] = valveOff;
+
   serialInit();
 
   //---=== Power-on sequence ===---
@@ -248,11 +255,7 @@ byte cmdSteps() {
   if (!checkCrc(cmd, 14)) {
     return 0;
   }
-  if (cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13])) {
-    cmd[0] = 1;
-  } else {
-    cmd[0] = 0;
-  }
+  cmd[0] = cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13], Move);
   write1(cmd);
   return 1;
 }
@@ -358,11 +361,11 @@ byte cmdLaserOn() {
   }
   byte on = cmd[1];
   if (on) {
-    PORTB |= 1<<PB6;
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, LaserOn);
   } else {
-    PORTB &= ~(1<<PB6);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, LaserOff);
   }
-  write0();
+  write1(cmd);
   return 1;
 }
 
@@ -378,11 +381,11 @@ byte cmdPumpOn() {
   }
   byte on = cmd[1];
   if (on) {
-    PORTG |= 1<<PG0;
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, PumpOn);
   } else {
-    PORTG &= ~(1<<PG0);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, PumpOff);
   }
-  write0();
+  write1(cmd);
   return 1;
 }
 
@@ -398,12 +401,36 @@ byte cmdValveOn() {
   }
   byte on = cmd[1];
   if (on) {
-    PORTL |= 1<<PL6;
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, ValveOn);
   } else {
-    PORTL &= ~(1<<PL6);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, ValveOff);
   }
-  write0();
+  write1(cmd);
   return 1;
+}
+
+void laserOn() {
+  PORTB |= 1<<PB6;
+}
+
+void laserOff() {
+  PORTB &= ~(1<<PB6);
+}
+
+void pumpOn() {
+  PORTG |= 1<<PG0;
+}
+
+void pumpOff() {
+  PORTG &= ~(1<<PG0);
+}
+
+void valveOn() {
+  PORTL |= 1<<PL6;
+}
+
+void valveOff() {
+  PORTL &= ~(1<<PL6);
 }
 
 // CMD: Executes deferred commands in the queue.
@@ -814,6 +841,7 @@ int main() {
     if (SPDR == 0xa5) {
       SPDR = 0x00;
       readSpi();
+      // Calibration routine.
       if (calibrator.isRunning()) {
         if (calibrator.isHit()) {
           if (calibrator.isBacking()) {
@@ -828,10 +856,34 @@ int main() {
         } else {
           writeSpi(calibrator.getForwardCommand());
         }
+      // If nothing left in the queue then send STOP.
       } else if (cmdQueue.isEmpty()) {
         writeSpi((Command*) &sequenceRest[1]);
+      // Some command is waiting to be processed.
       } else {
-        writeSpi(cmdQueue.popTail());
+        Command* command = cmdQueue.popTail();
+        // If movement command then send it to FPGA.
+        if (command->type == Move) {
+          writeSpi(command);
+        // If not a movement command then execute it.
+        } else {
+          serialRead();
+          implementationFunctions[command->type]();
+        }
+        // After a command has been sent to FPGA or directly executed peek at the
+        // queue to see if there is another non-movement command is waiting next
+        // and execute it too. Do until a movement command is next or no commands
+        // left in the queue.
+        while (!cmdQueue.isEmpty()) {
+          command = cmdQueue.peekTail();
+          if (command->type == Move) {
+            break;
+          } else {
+            serialRead();
+            cmdQueue.popTail();
+            implementationFunctions[command->type]();
+          }
+        }
       }
       processSerialBuffer();
     } else {
