@@ -238,8 +238,8 @@ class Dobot:
 		zz = float(z)
 		
 		accelf = None
-		# Set 100% acceleration if it wasn't provided or exceeds 100%
-		if accel == None or accel > maxVel:
+		# Set 100% acceleration to equal maximum velocity if it wasn't provided
+		if accel == None:
 			accelf = maxVel
 		else:
 			accelf = float(accel)
@@ -266,14 +266,19 @@ class Dobot:
 		# If half the distance is reached before reaching maxSpeed with the given acceleration, then actual
 		# maximum velocity will be lower, hence total number of slices is determined from half the distance
 		# and acceleration.
-		distMaxSpeed = pow(maxVel, 2) / (2.0 * accelf)
-		if distMaxSpeed * 2.0 >= distance:
-			accelSlices = math.sqrt(distance / accelf) * 50.0
+		distToReachMaxSpeed = pow(maxVel, 2) / (2.0 * accelf)
+		if distToReachMaxSpeed * 2.0 >= distance:
+			timeToAccel = math.sqrt(distance / accelf)
+			accelSlices = timeToAccel * 50.0
+			timeFlat = 0
 			flatSlices = 0
+			maxVel = math.sqrt(distance * accelf)
 		# Or else number of slices when velocity does not change is greater than zero.
 		else:
-			accelSlices = maxVel / accelf * 50.0
-			flatSlices = (distance - distMaxSpeed) / maxVel * 50.0
+			timeToAccel = maxVel / accelf
+			accelSlices = timeToAccel * 50.0
+			timeFlat = (distance - distToReachMaxSpeed * 2.0) / maxVel
+			flatSlices = timeFlat * 50.0
 
 		slices = accelSlices * 2.0 + flatSlices
 		self._debug('slices to do', slices)
@@ -281,25 +286,27 @@ class Dobot:
 		self._debug('flatSlices', flatSlices)
 
 		# Acceleration/deceleration in respective axes
-		accelX = accelf * vectX / distance
-		accelY = accelf * vectY / distance
-		accelZ = accelf * vectZ / distance
+		accelX = (accelf * vectX) / distance
+		accelY = (accelf * vectY) / distance
+		accelZ = (accelf * vectZ) / distance
 		self._debug('accelXYZ', accelX, accelY, accelZ)
 
 		# Vectors in respective axes to complete acceleration/deceleration
-		segmentAccelX = accelX * pow(accelSlices / 50.0, 2) / 2.0
-		segmentAccelY = accelY * pow(accelSlices / 50.0, 2) / 2.0
-		segmentAccelZ = accelZ * pow(accelSlices / 50.0, 2) / 2.0
+		segmentAccelX = accelX * pow(timeToAccel, 2) / 2.0
+		segmentAccelY = accelY * pow(timeToAccel, 2) / 2.0
+		segmentAccelZ = accelZ * pow(timeToAccel, 2) / 2.0
 		self._debug('segmentAccelXYZ', segmentAccelX, segmentAccelY, segmentAccelZ)
 
-		maxVelX = maxVel * vectX / distance
-		maxVelY = maxVel * vectY / distance
-		maxVelZ = maxVel * vectZ / distance
+		# Maximum velocity in respective axes for the segment with constant velocity
+		maxVelX = (maxVel * vectX) / distance
+		maxVelY = (maxVel * vectY) / distance
+		maxVelZ = (maxVel * vectZ) / distance
 		self._debug('maxVelXYZ', maxVelX, maxVelY, maxVelZ)
-		# Vectors in respective axes in the segment with constant velocity
-		segmentFlatX = maxVelX * flatSlices / 50.0
-		segmentFlatY = maxVelY * flatSlices / 50.0
-		segmentFlatZ = maxVelZ * flatSlices / 50.0
+
+		# Vectors in respective axes for the segment with constant velocity
+		segmentFlatX = maxVelX * timeFlat
+		segmentFlatY = maxVelY * timeFlat
+		segmentFlatZ = maxVelZ * timeFlat
 		self._debug('segmentFlatXYZ', segmentFlatX, segmentFlatY, segmentFlatZ)
 
 		# sliceX = vectX / slices
@@ -325,21 +332,22 @@ class Dobot:
 			self._debug('slice #', commands)
 			# If accelerating
 			if commands <= accelSlices:
-				nextX = currX + accelX * pow(commands / 50.0, 2) / 2.0
-				nextY = currY + accelY * pow(commands / 50.0, 2) / 2.0
-				nextZ = currZ + accelZ * pow(commands / 50.0, 2) / 2.0
+				t2half = pow(commands / 50.0, 2) / 2.0
+				nextX = currX + accelX * t2half
+				nextY = currY + accelY * t2half
+				nextZ = currZ + accelZ * t2half
 			# If decelerating
 			elif commands >= accelSlices + flatSlices:
-				cmd = (slices - commands) / 50.0
-				nextX = currX + segmentAccelX * 2.0 + segmentFlatX - accelX * pow(cmd, 2) / 2.0
-				nextY = currY + segmentAccelY * 2.0 + segmentFlatY - accelY * pow(cmd, 2) / 2.0
-				nextZ = currZ + segmentAccelZ * 2.0 + segmentFlatZ - accelZ * pow(cmd, 2) / 2.0
+				t2half = pow((slices - commands) / 50.0, 2) / 2.0
+				nextX = currX + segmentAccelX * 2.0 + segmentFlatX - accelX * t2half
+				nextY = currY + segmentAccelY * 2.0 + segmentFlatY - accelY * t2half
+				nextZ = currZ + segmentAccelZ * 2.0 + segmentFlatZ - accelZ * t2half
 			# Or else moving at maxSpeed
 			else:
-				cmd = abs(commands - accelSlices)
-				nextX = currX + segmentAccelX + maxVelX * cmd / 50.0
-				nextY = currY + segmentAccelY + maxVelY * cmd / 50.0
-				nextZ = currZ + segmentAccelZ + maxVelZ * cmd / 50.0
+				t = abs(commands - accelSlices) / 50.0
+				nextX = currX + segmentAccelX + maxVelX * t
+				nextY = currY + segmentAccelY + maxVelY * t
+				nextZ = currZ + segmentAccelZ + maxVelZ * t
 			self._debug('moving to', nextX, nextY, nextZ)
 
 			'''
@@ -390,19 +398,19 @@ class Dobot:
 			self._rearSteps += movedStepsRear
 			self._foreSteps += movedStepsFore
 
-			# currBaseAngle = piTwo * self._baseSteps / baseActualStepsPerRevolution
-			# currRearAngle = piHalf - piTwo * self._rearSteps / rearArmActualStepsPerRevolution
-			# currForeAngle = piTwo * self._foreSteps / foreArmActualStepsPerRevolution
-			# cX, cY, cZ = self.getCoordinatesFromAngles(currBaseAngle, currRearAngle, currForeAngle)
-			# toPlot1.append(cX)
-			# toPlot2.append(cY)
-			# toPlot3.append(cZ)
-			# toPlot4.append(nextX)
-			# toPlot5.append(nextY)
-			# toPlot6.append(nextZ)
-			# toPlot7.append(cX - nextX)
-			# toPlot8.append(cY - nextY)
-			# toPlot9.append(cZ - nextZ)
+			currBaseAngle = piTwo * self._baseSteps / baseActualStepsPerRevolution
+			currRearAngle = piHalf - piTwo * self._rearSteps / rearArmActualStepsPerRevolution
+			currForeAngle = piTwo * self._foreSteps / foreArmActualStepsPerRevolution
+			cX, cY, cZ = self._getCoordinatesFromAngles(currBaseAngle, currRearAngle, currForeAngle)
+			toPlot1.append(cX)
+			toPlot2.append(cY)
+			toPlot3.append(cZ)
+			toPlot4.append(nextX)
+			toPlot5.append(nextY)
+			toPlot6.append(nextZ)
+			toPlot7.append(cX - nextX)
+			toPlot8.append(cY - nextY)
+			toPlot9.append(cZ - nextZ)
 
 		# linewidth = 1.0
 		# plt.subplot(131)
@@ -414,9 +422,10 @@ class Dobot:
 		# line, = plt.plot(toPlot2, linewidth=linewidth)
 		# line, = plt.plot(toPlot3, linewidth=linewidth)
 		# plt.subplot(133)
-		# line, = plt.plot(toPlot7, linewidth=linewidth)
-		# line, = plt.plot(toPlot8, linewidth=linewidth)
-		# line, = plt.plot(toPlot9, linewidth=linewidth)
+		# line, = plt.plot(toPlot7, linewidth=linewidth, label='x')
+		# line, = plt.plot(toPlot8, linewidth=linewidth, label='y')
+		# line, = plt.plot(toPlot9, linewidth=linewidth, label='z')
+		# legend = plt.legend(loc='upper center', shadow=True)
 		# plt.show()
 
 	def moveTo(self, x, y, z, duration):
