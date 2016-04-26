@@ -41,9 +41,12 @@ The fact that the Arduino board does not actually control the arm but delegates 
 - 100% accurate moves in steps
 - limit switch/photointerrupter support with calibration routing implemented in firmware and controlled from application level (DobotDriver.py, DobotSDK.py) by selecting any of the unused Arduino pins dynamically
 - accurate and fast Inverse Kinematics
-- 100% accurate step number tracking in SDK and in firmware (coming in 0.6.0)
-- accurate (to the best of Dobot's mechanical design) moves in cartesian coordinates (x,y,z) in a straight line from current location to the specified location (coming in 0.6.0)
-- laser on/off (coming in 0.6.0)
+- 100% accurate step number tracking in SDK and in firmware
+- accurate (to the best of Dobot's mechanical design) moves in cartesian coordinates (x,y,z) in a straight line from current location to the specified location
+- laser on/off (correct queueing coming in 0.7.0)
+- pump and valve on/off with correct queueing (coming in 0.7.0)
+- smooth moves with acceleration/deceleration (coming in 0.7.0)
+- gripper control (coming in 0.7.0)
 
 ---
 
