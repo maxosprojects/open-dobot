@@ -74,7 +74,7 @@ Using original [DobotTools](http://dobot.cc/download.php) or [avrdude](http://ww
 Alternatively, you can compile and flash the firmware yourself using a simple build script firmware/fpga/upload.sh that refers to avrdude already installed with Arduino IDE.
 
 # Usage
-In application/fpga/python/ folder you may find the calibration-tool.py to find the offsets of the accelerometers installed on your dobot. Every accelerometer is soldered at a slight angle, which needs to be accounted for when performing calculations. Although that angle is very small, at longer distances (when the arm is stretched) is becomes noticeable and the whole XY plane becomes messed up. So, you don't that offset not to be accounted for.
+In application/fpga/python/ folder you may find the calibration-tool.py to find the offsets of the accelerometers installed on your dobot. Every accelerometer is soldered at a slight angle, which needs to be accounted for when performing calculations. Although that angle is very small, at longer distances (when the arm is stretched) is becomes noticeable and the whole XY plane becomes messed up. So, you don't want that offset not to be accounted for.
 
 In the same folder you may find some examples that use the driver directly, SDK and more. Read the descriptions in those examples before executing.
 
