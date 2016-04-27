@@ -67,7 +67,7 @@ CommandQueue cmdQueue(CMD_QUEUE_SIZE);
 Calibrator calibrator;
 
 // Buffer to read command into.
-byte cmd[20];
+byte cmd[24];
 // Current index in command buffer.
 byte cmdInBuffIndex = 0;
 byte crc[2];
@@ -248,14 +248,14 @@ byte cmdReady() {
 // CMD: Adds a command to the queue.
 byte cmdSteps() {
   // Check if not enough bytes yet.
-  if (cmdInBuffIndex < 16) {
+  if (cmdInBuffIndex < 20) {
     return 0;
   }
   cmdInBuffIndex = 0;
-  if (!checkCrc(cmd, 14)) {
+  if (!checkCrc(cmd, 18)) {
     return 0;
   }
-  cmd[0] = cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13], Move);
+  cmd[0] = cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13], (uint*) &cmd[14], (uint*) &cmd[16], Move);
   write1(cmd);
   return 1;
 }
@@ -361,9 +361,9 @@ byte cmdLaserOn() {
   }
   byte on = cmd[1];
   if (on) {
-    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, LaserOn);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, LaserOn);
   } else {
-    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, LaserOff);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, LaserOff);
   }
   write1(cmd);
   return 1;
@@ -381,9 +381,9 @@ byte cmdPumpOn() {
   }
   byte on = cmd[1];
   if (on) {
-    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, PumpOn);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, PumpOn);
   } else {
-    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, PumpOff);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, PumpOff);
   }
   write1(cmd);
   return 1;
@@ -401,9 +401,9 @@ byte cmdValveOn() {
   }
   byte on = cmd[1];
   if (on) {
-    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, ValveOn);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, ValveOn);
   } else {
-    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, ValveOff);
+    cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, ValveOff);
   }
   write1(cmd);
   return 1;
@@ -600,14 +600,14 @@ inline void serialRead() {
   if (BLUETOOTH_ENABLED) {
     if (UCSR1A & (1<<RXC1)) {
       cmd[cmdInBuffIndex] = UDR1;
-      if (cmdInBuffIndex < 19) {
+      if (cmdInBuffIndex < 23) {
         cmdInBuffIndex++;
       }
     }
   } else {
     if (UCSR0A & (1<<RXC0)) {
       cmd[cmdInBuffIndex] = UDR0;
-      if (cmdInBuffIndex < 19) {
+      if (cmdInBuffIndex < 23) {
         cmdInBuffIndex++;
       }
     }
@@ -769,14 +769,13 @@ void writeSpi(Command* cmd) {
   FPGA_COMMAND_PORT |= (1<<FPGA_COMMAND_PIN);
   SPDR = sequenceRest[0];
 
-  // writeSpiByte(sequenceRest[0]);
-  for (byte i = 0; i < 13; i++) {
+  for (byte i = 0; i < 17; i++) {
     writeSpiByte(data[i]);
   }
-  writeSpiByte(sequenceRest[14]);
-  writeSpiByte(sequenceRest[15]);
-  writeSpiByte(sequenceRest[16]);
-  writeSpiByte(sequenceRest[17]);
+  // writeSpiByte(sequenceRest[14]);
+  // writeSpiByte(sequenceRest[15]);
+  // writeSpiByte(sequenceRest[16]);
+  // writeSpiByte(sequenceRest[17]);
   writeSpiByte(sequenceRest[18]);
   loop_until_bit_is_set(SPSR, SPIF);
   FPGA_COMMAND_PORT &= ~(1<<FPGA_COMMAND_PIN);

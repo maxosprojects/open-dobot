@@ -321,12 +321,25 @@ class DobotDriver:
 									(self._writelong, val3),
 									(self._writebyte, val4)])
 
+	def _write1444122read1(self, cmd, val1, val2, val3, val4, val5, val6):
+		return self._write_read(cmd, [(self._writelong, val1),
+									(self._writelong, val2),
+									(self._writelong, val3),
+									(self._writebyte, val4),
+									(self._writeword, val5),
+									(self._writeword, val6)])
+
 	def reverseBits32(self, val):
 		### return long(bin(val&0xFFFFFFFF)[:1:-1], 2)
 		# return int('{0:032b}'.format(val)[::-1], 2)
 		# Not reversing bits in bytes any more as SPI switched to LSB first.
 		# But still need to reverse bytes places.
 		return ((val & 0x000000FF) << 24) | ((val & 0x0000FF00) << 8) | ((val & 0x00FF0000) >> 8) | ((val & 0xFF000000) >> 24)
+
+	def reverseBits16(self, val):
+		# Not reversing bits in bytes any more as SPI switched to LSB first.
+		# But still need to reverse bytes places.
+		return ((val & 0x00FF) << 8) | ((val & 0xFF00) >> 8)
 
 	def freqToCmdVal(self, freq):
 		'''
@@ -410,7 +423,7 @@ class DobotDriver:
 		self._lock.release()
 		return result
 
-	def Steps(self, j1, j2, j3, j1dir, j2dir, j3dir, deferred=False):
+	def Steps(self, j1, j2, j3, j1dir, j2dir, j3dir, servoGrab, servoRot, deferred=False):
 		'''
 		Adds a command to the controller's queue to execute on FPGA.
 		@param j1 - joint1 subcommand
@@ -419,17 +432,19 @@ class DobotDriver:
 		@param j1dir - direction for joint1: 0-1
 		@param j2dir - direction for joint2: 0-1
 		@param j3dir - direction for joint3: 0-1
+		@param servoGrab - servoGrab position: 0-1
+		@param servoRot - servoRot position: 0-1
 		@param deferred - defer execution of this command and all commands issued after this until
 						the "ExecQueue" command is issued.
 		@return Returns a tuple where the first element tells whether the command has been successfully
-		received (0 - yes, 1 - timed out), and the second element tells whether the command was added
+		received (1 - received, 0 - timed out), and the second element tells whether the command was added
 		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
 		'''
 		control = (j1dir & 0x01) | ((j2dir & 0x01) << 1) | ((j3dir & 0x01) << 2);
 		# if deferred:
 		# 	control |= 0x01
 		self._lock.acquire()
-		result = self._write14441read1(CMD_STEPS, j1, j2, j3, control)
+		result = self._write1444122read1(CMD_STEPS, j1, j2, j3, control, servoGrab, servoRot)
 		self._lock.release()
 		return result
 

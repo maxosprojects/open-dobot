@@ -53,6 +53,8 @@ typedef struct {
   ulong j3;
   // ControlByte control;
   byte control;
+  uint servoGrab;
+  uint servoRot;
   CommandType type;
 } Command;
 
@@ -118,9 +120,9 @@ volatile byte sequenceRest[19] = {
 0xf0,
 0x0,
 0xe0, // motors direction ([bit7-bit0]: bit7 - motor1, bit6 - motor2, bit5 - motor3)
-0x2f,
+0x2f, // servoGrab
 0x80,
-0x2f,
+0x2f, // servoRot
 0x80,
 0x5a // end signature
 };
@@ -299,12 +301,14 @@ class CommandQueue {
       size = newSize;
     };
 
-    byte appendHead(ulong *newJ1, ulong *newJ2, ulong *newJ3, byte *control, CommandType type) {
+    byte appendHead(ulong *newJ1, ulong *newJ2, ulong *newJ3, byte *control, uint *servoGrab, uint *servoRot, CommandType type) {
       if (!isFull()) {
         queue[head].j1 = *newJ1;
         queue[head].j2 = *newJ2;
         queue[head].j3 = *newJ3;
         queue[head].control = *control;
+        queue[head].servoGrab = *servoGrab;
+        queue[head].servoRot = *servoRot;
         queue[head].type = type;
         // queue[head].control.j1dir = (control >> 1) & 0x01;
         // queue[head].control.j2dir = (control >> 2) & 0x01;
