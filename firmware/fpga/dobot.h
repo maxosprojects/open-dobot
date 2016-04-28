@@ -301,14 +301,14 @@ class CommandQueue {
       size = newSize;
     };
 
-    byte appendHead(ulong *newJ1, ulong *newJ2, ulong *newJ3, byte *control, uint *servoGrab, uint *servoRot, CommandType type) {
+    byte appendHead(ulong *newJ1, ulong *newJ2, ulong *newJ3, byte *control, uint servoGrab, uint servoRot, CommandType type) {
       if (!isFull()) {
         queue[head].j1 = *newJ1;
         queue[head].j2 = *newJ2;
         queue[head].j3 = *newJ3;
         queue[head].control = *control;
-        queue[head].servoGrab = *servoGrab;
-        queue[head].servoRot = *servoRot;
+        queue[head].servoGrab = servoGrab;
+        queue[head].servoRot = servoRot;
         queue[head].type = type;
         // queue[head].control.j1dir = (control >> 1) & 0x01;
         // queue[head].control.j2dir = (control >> 2) & 0x01;

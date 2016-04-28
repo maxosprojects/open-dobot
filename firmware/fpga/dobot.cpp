@@ -75,14 +75,17 @@ byte crc[2];
 // ulong lastTimeExecuted = 0;
 byte defer = 1;
 
+uint currGripper = 0xe001;
+uint currToolRotation = 0;
+
 byte prevMotorDirections = 0;
 byte currMotorDirections = 0;
 long motorPositionBase = 0;
 long motorPositionRear = 0;
 long motorPositionFore = 0;
 
-unsigned int accelRear;
-unsigned int accelFront;
+uint accelRear;
+uint accelFront;
 byte accelReportMode = 0;
 
 void setup() {
@@ -221,12 +224,13 @@ inline void processSerialBuffer() {
   int iterationsLeft = 10000;
   while (iterationsLeft > 0) {
     if (processCommand()) {
-      iterationsLeft -= 1000;
+      iterationsLeft -= 2000;
     } else {
       iterationsLeft -= 1;
     }
     serialRead();
   }
+
 }
 
 // CMD: Returns magic number to indicate that the controller is alive.
@@ -255,7 +259,9 @@ byte cmdSteps() {
   if (!checkCrc(cmd, 18)) {
     return 0;
   }
-  cmd[0] = cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13], (uint*) &cmd[14], (uint*) &cmd[16], Move);
+  currGripper = cmd[14] << 8 | cmd[15];
+  currToolRotation = cmd[16] << 8 | cmd[17];
+  cmd[0] = cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13], currGripper, currToolRotation, Move);
   write1(cmd);
   return 1;
 }
@@ -783,6 +789,23 @@ void writeSpi(Command* cmd) {
   currMotorDirections = data[12];
 }
 
+void writeSpiRest() {
+  FPGA_COMMAND_PORT |= (1<<FPGA_COMMAND_PIN);
+  SPDR = sequenceRest[0];
+
+  for (byte i = 1; i < 14; i++) {
+    writeSpiByte(sequenceRest[i]);
+  }
+  writeSpiByte((currGripper >> 8) & 0xFF) ;
+  writeSpiByte(currGripper & 0xFF) ;
+  writeSpiByte((currToolRotation >> 8) & 0xFF) ;
+  writeSpiByte(currToolRotation & 0xFF) ;
+
+  writeSpiByte(sequenceRest[18]);
+  loop_until_bit_is_set(SPSR, SPIF);
+  FPGA_COMMAND_PORT &= ~(1<<FPGA_COMMAND_PIN);
+}
+
 inline byte readSpiByte() {
   loop_until_bit_is_set(SPSR, SPIF);
   return SPDR;
@@ -851,13 +874,15 @@ int main() {
           }
         } else if (calibrator.isBacking()) {
           calibrator.stop();
-          writeSpi((Command*) &sequenceRest[1]);
+          // writeSpi((Command*) &sequenceRest[1]);
+          writeSpiRest();
         } else {
           writeSpi(calibrator.getForwardCommand());
         }
       // If nothing left in the queue then send STOP.
       } else if (cmdQueue.isEmpty()) {
-        writeSpi((Command*) &sequenceRest[1]);
+          // writeSpi((Command*) &sequenceRest[1]);
+          writeSpiRest();
       // Some command is waiting to be processed.
       } else {
         Command* command = cmdQueue.popTail();

@@ -74,6 +74,8 @@ class Dobot:
 		if not fake:
 			self._driver.Open(timeout)
 		self._ik = DobotInverseKinematics(debug=debug)
+		self._toolRotation = 0
+		self._gripper = 480
 		# Initialize arms current configuration from accelerometers
 		if fake:
 			self._baseSteps = long(0)
@@ -163,7 +165,8 @@ class Dobot:
 				ret = self._driver.Steps(base, rear, fore, baseDir, rearDir, foreDir)
 
 	def _moveToAnglesSlice(self, baseAngle, rearArmAngle, foreArmAngle, \
-									carryOverStepsBase, carryOverStepsRear, carryOverStepsFore):
+									carryOverStepsBase, carryOverStepsRear, carryOverStepsFore, \
+									toolRotation):
 
 		baseStepLocation = baseAngle * baseActualStepsPerRevolution / piTwo
 		rearArmStepLocation = abs(rearArmAngle * rearArmActualStepsPerRevolution / piTwo)
@@ -220,7 +223,7 @@ class Dobot:
 			# Repeat until the command is buffered. May not be buffered if buffer is full.
 			ret = (0, 0)
 			while not ret[1]:
-				ret = self._driver.Steps(cmdBaseVal, cmdRearVal, cmdForeVal, baseDir, rearDir, foreDir)
+				ret = self._driver.Steps(cmdBaseVal, cmdRearVal, cmdForeVal, baseDir, rearDir, foreDir, self._gripper, int(toolRotation))
 
 		return (actualStepsBase * baseSign, actualStepsRear * rearSign, actualStepsFore * foreSign,\
 					leftStepsBase * baseSign, leftStepsRear * rearSign, leftStepsFore * foreSign)
@@ -231,12 +234,87 @@ class Dobot:
 		'''
 		return self._driver.freqToCmdVal(freq)
 
-	def moveWithSpeed(self, x, y, z, maxSpeed, accel=None):
+	def _moveTo(self, x, y, z, duration):
+		'''
+		TEMPORARILY UNAVALAILABLE
+		Left for future refactor.
+
+		Moves the arm to the location with provided coordinates. Makes sure it takes exactly
+		the amount of time provided in "duration" argument to get end effector to the location.
+		All axes arrive at the same time.
+		SDK keeps track of the current end effector pose.
+		The origin is at the arm's base (the rotating base plate - joint1).
+		Refer to docs/images/arm-description.png and docs/images/reference-frame.png to find
+		more about reference frame and arm names.
+		Current limitations:
+		- rear arm cannot go beyond initial 90 degrees (backwards from initial vertical position),
+		  so plan carefully the coordinates
+		- forearm cannot go above initial horizontal position
+		Not yet implemented:
+		- the move is not linear as motors run the whole path at constant speed
+		- acceleration/deceleration
+		- rear arm cannot go beyond 90 degrees (see current limitations) and there are no checks
+		  for that - it will simply go opposite direction instead
+		'''
+		xx = float(x)
+		yy = float(y)
+		zz = float(z)
+
+		radiansToDegrees = 180.0 / math.pi
+
+		b = 135.0
+		c = 160.0
+		b2 = pow(b, 2)
+		c2 = pow(c, 2)
+
+		self._debug('============================')
+
+		r = math.sqrt(pow(xx, 2) + pow(yy, 2))
+		self._debug('r', r)
+		z2 = zz - (80.0 + 23.0)
+		self._debug('z2', z2)
+		d2 = math.pow(z2, 2) + math.pow(r, 2)
+		d = math.sqrt(d2)
+		self._debug('d', d)
+		self._debug('d2', d2)
+
+		q1 = math.atan2(z2, r)
+		self._debug('q1', q1, q1 * radiansToDegrees)
+		q2 = math.acos((b2 - c2 + d2) / (2.0 * b * d))
+		self._debug('q2', q2, q2 * radiansToDegrees)
+		rearAngle = piHalf - (q1 + q2)
+		self._debug('ik rear angle', rearAngle, rearAngle * radiansToDegrees)
+		foreAngle = piHalf - (math.acos((b2 + c2 - d2) / (2.0 * b * c)) - rearAngle)
+		self._debug('ik fore angle', foreAngle, foreAngle * radiansToDegrees)
+		baseAngle = math.atan2(yy, xx)
+		self._debug('ik base angle', baseAngle, baseAngle * radiansToDegrees)
+
+		self._moveArmToAngles(baseAngle, rearAngle, foreAngle, duration)
+
+	def _getCoordinatesFromAngles(self, baseAngle, rearArmAngle, foreArmAngle):
+		radius = lengthRearArm * math.cos(rearArmAngle) + lengthForearm * math.cos(foreArmAngle) + distanceTool
+		x = radius * math.cos(baseAngle)
+		y = radius * math.sin(baseAngle)
+		z = lengthRearArm * math.sin(rearArmAngle) + heightFromBase - lengthForearm * math.sin(foreArmAngle)
+
+		return (x, y, z)
+
+	def MoveWithSpeed(self, x, y, z, maxSpeed, accel=None, toolRotation=None):
+		'''
+		For toolRotation see DobotDriver.Steps() function description (servoRot parameter).
+		'''
 		maxVel = float(maxSpeed)
 		xx = float(x)
 		yy = float(y)
 		zz = float(z)
 		
+		if toolRotation == None:
+			toolRotation = self._toolRotation
+		elif toolRotation > 1024:
+			toolRotation = 1024
+		elif toolRotation < 0:
+			toolRotation = 0
+
 		accelf = None
 		# Set 100% acceleration to equal maximum velocity if it wasn't provided
 		if accel == None:
@@ -309,6 +387,9 @@ class Dobot:
 		segmentFlatZ = maxVelZ * timeFlat
 		self._debug('segmentFlatXYZ', segmentFlatX, segmentFlatY, segmentFlatZ)
 
+		segmentToolRotation = (toolRotation - self._toolRotation) / slices
+		self._debug('segmentToolRotation', segmentToolRotation)
+
 		# sliceX = vectX / slices
 		# sliceY = vectY / slices
 		# sliceZ = vectZ / slices
@@ -350,6 +431,9 @@ class Dobot:
 				nextZ = currZ + segmentAccelZ + maxVelZ * t
 			self._debug('moving to', nextX, nextY, nextZ)
 
+			nextToolRotation = self._toolRotation + (segmentToolRotation * commands)
+			self._debug('nextToolRotation', nextToolRotation)
+
 			'''
 			http://www.learnaboutrobots.com/inverseKinematics.htm
 			'''
@@ -387,7 +471,8 @@ class Dobot:
 
 			movedStepsBase, movedStepsRear, movedStepsFore, leftStepsBase, leftStepsRear, leftStepsFore = \
 				self._moveToAnglesSlice(baseAngle, rearAngle, foreAngle, \
-										leftStepsBase, leftStepsRear, leftStepsFore)
+										leftStepsBase, leftStepsRear, leftStepsFore, \
+										nextToolRotation)
 
 			self._debug('moved', movedStepsBase, movedStepsRear, movedStepsFore, 'steps')
 			self._debug('leftovers', leftStepsBase, leftStepsRear, leftStepsFore)
@@ -412,6 +497,8 @@ class Dobot:
 			toPlot8.append(cY - nextY)
 			toPlot9.append(cZ - nextZ)
 
+		self._toolRotation = toolRotation
+
 		# linewidth = 1.0
 		# plt.subplot(131)
 		# line, = plt.plot(toPlot4, linewidth=linewidth)
@@ -428,67 +515,31 @@ class Dobot:
 		# legend = plt.legend(loc='upper center', shadow=True)
 		# plt.show()
 
-	def moveTo(self, x, y, z, duration):
+	def Gripper(self, gripper):
+		if gripper > 480:
+			self._gripper = 480
+		elif gripper < 208:
+			self._gripper = 208
+		else:
+			self._gripper = gripper
+
+		self._driver.Steps(0, 0, 0, 0, 0, 0, self._gripper, self._toolRotation)
+
+	def Wait(self, waitTime):
 		'''
-		Moves the arm to the location with provided coordinates. Makes sure it takes exactly
-		the amount of time provided in "duration" argument to get end effector to the location.
-		All axes arrive at the same time.
-		SDK keeps track of the current end effector pose.
-		The origin is at the arm's base (the rotating base plate - joint1).
-		Refer to docs/images/arm-description.png and docs/images/reference-frame.png to find
-		more about reference frame and arm names.
-		Current limitations:
-		- rear arm cannot go beyond initial 90 degrees (backwards from initial vertical position),
-		  so plan carefully the coordinates
-		- forearm cannot go above initial horizontal position
-		Not yet implemented:
-		- the move is not linear as motors run the whole path at constant speed
-		- acceleration/deceleration
-		- rear arm cannot go beyond 90 degrees (see current limitations) and there are no checks
-		  for that - it will simply go opposite direction instead
+		Makes the arm wait in current position for the specified period of time. The wait period is specified
+		in seconds and can be fractions of seconds.
+		The resolution of this command is up to 20ms.
+
+		In order to make the arm wait a number of commands are issued to do nothing. Each command takes 20ms
+		to execute by the arm.
 		'''
-		xx = float(x)
-		yy = float(y)
-		zz = float(z)
-
-		radiansToDegrees = 180.0 / math.pi
-
-		b = 135.0
-		c = 160.0
-		b2 = pow(b, 2)
-		c2 = pow(c, 2)
-
-		self._debug('============================')
-
-		r = math.sqrt(pow(xx, 2) + pow(yy, 2))
-		self._debug('r', r)
-		z2 = zz - (80.0 + 23.0)
-		self._debug('z2', z2)
-		d2 = math.pow(z2, 2) + math.pow(r, 2)
-		d = math.sqrt(d2)
-		self._debug('d', d)
-		self._debug('d2', d2)
-
-		q1 = math.atan2(z2, r)
-		self._debug('q1', q1, q1 * radiansToDegrees)
-		q2 = math.acos((b2 - c2 + d2) / (2.0 * b * d))
-		self._debug('q2', q2, q2 * radiansToDegrees)
-		rearAngle = piHalf - (q1 + q2)
-		self._debug('ik rear angle', rearAngle, rearAngle * radiansToDegrees)
-		foreAngle = piHalf - (math.acos((b2 + c2 - d2) / (2.0 * b * c)) - rearAngle)
-		self._debug('ik fore angle', foreAngle, foreAngle * radiansToDegrees)
-		baseAngle = math.atan2(yy, xx)
-		self._debug('ik base angle', baseAngle, baseAngle * radiansToDegrees)
-
-		self._moveArmToAngles(baseAngle, rearAngle, foreAngle, duration)
-
-	def _getCoordinatesFromAngles(self, baseAngle, rearArmAngle, foreArmAngle):
-		radius = lengthRearArm * math.cos(rearArmAngle) + lengthForearm * math.cos(foreArmAngle) + distanceTool
-		x = radius * math.cos(baseAngle)
-		y = radius * math.sin(baseAngle)
-		z = lengthRearArm * math.sin(rearArmAngle) + heightFromBase - lengthForearm * math.sin(foreArmAngle)
-
-		return (x, y, z)
+		iterations = int(waitTime * 50)
+		for i in range(iterations):
+			ret = (0, 0)
+			# Keep sending until buffered
+			while not ret[0] or not ret[1]:
+				ret = self._driver.Steps(0, 0, 0, 0, 0, 0, self._gripper, self._toolRotation)
 
 	def CalibrateJoint(self, joint, forwardCommand, backwardCommand, direction, pin, pinMode, pullup):
 		'''
@@ -511,3 +562,4 @@ class Dobot:
 	
 	def ValveOn(self, on):
 		return self._driver.ValveOn(on)
+

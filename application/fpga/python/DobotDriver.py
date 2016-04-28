@@ -432,8 +432,8 @@ class DobotDriver:
 		@param j1dir - direction for joint1: 0-1
 		@param j2dir - direction for joint2: 0-1
 		@param j3dir - direction for joint3: 0-1
-		@param servoGrab - servoGrab position: 0-1
-		@param servoRot - servoRot position: 0-1
+		@param servoGrab - servoGrab position (gripper): 0x00d0-0x01e0 (or 208-480 decimal)
+		@param servoRot - servoRot position (tool rotation): 0x0000-0x0400 (or 0-1024 decimal)
 		@param deferred - defer execution of this command and all commands issued after this until
 						the "ExecQueue" command is issued.
 		@return Returns a tuple where the first element tells whether the command has been successfully
@@ -444,7 +444,15 @@ class DobotDriver:
 		# if deferred:
 		# 	control |= 0x01
 		self._lock.acquire()
-		result = self._write1444122read1(CMD_STEPS, j1, j2, j3, control, servoGrab, servoRot)
+		if servoGrab > 480:
+			servoGrab = 480
+		elif servoGrab < 208:
+			servoGrab = 208
+		if servoRot > 1024:
+			servoRot = 1024
+		elif servoRot < 0:
+			servoRot = 0
+		result = self._write1444122read1(CMD_STEPS, j1, j2, j3, control, self.reverseBits16(servoGrab), self.reverseBits16(servoRot))
 		self._lock.release()
 		return result
 
