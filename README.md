@@ -43,10 +43,11 @@ The fact that the Arduino board does not actually control the arm but delegates 
 - accurate and fast Inverse Kinematics
 - 100% accurate step number tracking in SDK and in firmware
 - accurate (to the best of Dobot's mechanical design) moves in cartesian coordinates (x,y,z) in a straight line from current location to the specified location
-- laser on/off (correct queueing coming in 0.7.0)
-- pump and valve on/off with correct queueing (coming in 0.7.0)
-- smooth moves with acceleration/deceleration (coming in 0.7.0)
-- gripper control (coming in 0.7.0)
+- laser on/off with correct queueing
+- pump and valve on/off with correct queueing
+- smooth moves with acceleration/deceleration
+- gripper control
+- ```wait``` command to introduce a delay in the movement/manipulation sequence if needed
 
 ---
 
