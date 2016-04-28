@@ -22,8 +22,8 @@ number_of_steps = 600Hz * 20ms = 600 * 0.02 = 12
 from DobotDriver import DobotDriver
 import time
 
-driver = DobotDriver('/dev/tty.BT4-SPP-SerialPort')
-# driver = DobotDriver('/dev/tty.usbmodem1421')
+# driver = DobotDriver('/dev/tty.BT4-SPP-SerialPort')
+driver = DobotDriver('/dev/tty.usbmodem1421')
 driver.Open()
 successes = 0
 i = 0
@@ -37,18 +37,18 @@ while True:
 	if i > 100:
 		raise Exception('Comm problem')
 
+gripper = 480
+toolRotation = 0
 
-driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(0), driver.stepsToCmdVal(14), 1, 1, 0)
-driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(1), driver.stepsToCmdVal(14), 1, 1, 0)
-driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(3), driver.stepsToCmdVal(15), 1, 1, 0)
+driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(0), driver.stepsToCmdVal(14), 1, 1, 0, gripper, toolRotation)
+driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(1), driver.stepsToCmdVal(14), 1, 1, 0, gripper, toolRotation)
+driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(3), driver.stepsToCmdVal(15), 1, 1, 0, gripper, toolRotation)
 time.sleep(2)
 print driver.GetCounters()
 
-exit(0)
-
+# exit(0)
 
 print 'Accelerometer data returned', driver.GetAccelerometers()
-
 
 steps1 = driver.stepsToCmdVal(27)
 steps2 = driver.stepsToCmdVal(3)
@@ -59,7 +59,7 @@ errors = 0
 for i in range(20):
 	ret = (0, 0)
 	while not ret[1]:
-		ret = driver.Steps(steps1, steps2, steps3, 1, 0, 1)
+		ret = driver.Steps(steps1, steps2, steps3, 1, 0, 1, gripper, toolRotation)
 	if not ret[1]:
 		errors += 1
 		print 'Error', errors
@@ -67,7 +67,7 @@ time.sleep(6)
 print 27*20, 3*20, 14*20
 print driver.GetCounters()
 
-exit(0)
+# exit(0)
 
 freq = [
 	   0,
@@ -94,7 +94,7 @@ def execute(keys1, keys2, keys3, direction1, direction2, direction3):
 			# Check for return from Arduino to make sure the command was queued.
 			# See function desciption for more details.
 			while not ret[1]:
-				ret = driver.Steps(code1, code2, code3, direction1, direction2, direction3)
+				ret = driver.Steps(code1, code2, code3, direction1, direction2, direction3, gripper, toolRotation)
 
 increasing = freq
 decreasing = sorted(freq, reverse=True)

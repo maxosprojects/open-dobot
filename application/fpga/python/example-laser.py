@@ -24,7 +24,7 @@ def repeatUntilQueued(on):
 	while not ret[0] or not ret[1]:
 		ret = dobot.LaserOn(on)
 
-dobot.moveWithSpeed(200.0, -50.0, 100.0, 50)
+dobot.MoveWithSpeed(200.0, -50.0, 100.0, 50)
 repeatUntilQueued(True)
-dobot.moveWithSpeed(200.0, 50.0, 100.0, 0.75)
+dobot.MoveWithSpeed(200.0, 50.0, 100.0, 0.75)
 repeatUntilQueued(False)

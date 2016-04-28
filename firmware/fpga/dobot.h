@@ -207,7 +207,7 @@ class Calibrator {
     };
 
     // control: [7-4] unused, [4] - pinMode, [3] - pullup enable, [2] - direction, [1-0] - joint
-    void start(byte newPin, byte control, ulong *fwdSpeed, ulong *backSpeed) {
+    void start(byte newPin, byte control, ulong *fwdSpeed, ulong *backSpeed, uint gripper, uint toolRotation) {
       // Disable pull-up resistor if it was enabled.
       if (pullup == 1) {
         *(calibrationPins[pin].portin) &= ~(1 << calibrationPins[pin].pin);
@@ -221,7 +221,11 @@ class Calibrator {
         pinMode = (control >> 4) & 0x01;
         // direction
         fwdCmd.control = (control & 0x04) >> (2 - joint);
+        fwdCmd.servoGrab= gripper;
+        fwdCmd.servoRot = toolRotation;
         backCmd.control = (~control & 0x04) >> (5 - joint);
+        backCmd.servoGrab= gripper;
+        backCmd.servoRot = toolRotation;
         memset(&fwdCmd, 0, 12);
         memset(&backCmd, 0, 12);
         ulong *ptr;

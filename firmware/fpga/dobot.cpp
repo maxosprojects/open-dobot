@@ -259,8 +259,8 @@ byte cmdSteps() {
   if (!checkCrc(cmd, 18)) {
     return 0;
   }
-  currGripper = cmd[14] << 8 | cmd[15];
-  currToolRotation = cmd[16] << 8 | cmd[17];
+  currGripper = cmd[14] | cmd[15] << 8;
+  currToolRotation = cmd[16] | cmd[17] << 8;
   cmd[0] = cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13], currGripper, currToolRotation, Move);
   write1(cmd);
   return 1;
@@ -288,7 +288,7 @@ byte cmdCalibrateJoint() {
     return 0;
   }
   cmdQueue.clear();
-  calibrator.start(pin, ctrl, (ulong*) &cmd[1], (ulong*) &cmd[5]);
+  calibrator.start(pin, ctrl, (ulong*) &cmd[1], (ulong*) &cmd[5], currGripper, currToolRotation);
   write0();
   return 1;
 }
