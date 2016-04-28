@@ -41,9 +41,12 @@ The fact that the Arduino board does not actually control the arm but delegates 
 - 100% accurate moves in steps
 - limit switch/photointerrupter support with calibration routing implemented in firmware and controlled from application level (DobotDriver.py, DobotSDK.py) by selecting any of the unused Arduino pins dynamically
 - accurate and fast Inverse Kinematics
-- 100% accurate step number tracking in SDK and in firmware (coming in 0.6.0)
-- accurate (to the best of Dobot's mechanical design) moves in cartesian coordinates (x,y,z) in a straight line from current location to the specified location (coming in 0.6.0)
-- laser on/off (coming in 0.6.0)
+- 100% accurate step number tracking in SDK and in firmware
+- accurate (to the best of Dobot's mechanical design) moves in cartesian coordinates (x,y,z) in a straight line from current location to the specified location
+- laser on/off (correct queueing coming in 0.7.0)
+- pump and valve on/off with correct queueing (coming in 0.7.0)
+- smooth moves with acceleration/deceleration (coming in 0.7.0)
+- gripper control (coming in 0.7.0)
 
 ---
 
@@ -71,7 +74,7 @@ Using original [DobotTools](http://dobot.cc/download.php) or [avrdude](http://ww
 Alternatively, you can compile and flash the firmware yourself using a simple build script firmware/fpga/upload.sh that refers to avrdude already installed with Arduino IDE.
 
 # Usage
-In application/fpga/python/ folder you may find the calibration-tool.py to find the offsets of the accelerometers installed on your dobot. Every accelerometer is soldered at a slight angle, which needs to be accounted for when performing calculations. Although that angle is very small, at longer distances (when the arm is stretched) is becomes noticeable and the whole XY plane becomes messed up. So, you don't that offset not to be accounted for.
+In application/fpga/python/ folder you may find the calibration-tool.py to find the offsets of the accelerometers installed on your dobot. Every accelerometer is soldered at a slight angle, which needs to be accounted for when performing calculations. Although that angle is very small, at longer distances (when the arm is stretched) is becomes noticeable and the whole XY plane becomes messed up. So, you don't want that offset not to be accounted for.
 
 In the same folder you may find some examples that use the driver directly, SDK and more. Read the descriptions in those examples before executing.
 
