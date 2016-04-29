@@ -529,6 +529,9 @@ class DobotDriver:
 	
 	def PumpOn(self, on):
 		'''
+		Turn On/Off the pump motor, if you want actually grip something you also need to turn the valve
+		on otherwise the air just flow throught it.
+		
 		@return Returns a tuple where the first element tells whether the command has been successfully
 		received (0 - yes, 1 - timed out), and the second element tells whether the command was added
 		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
@@ -543,6 +546,9 @@ class DobotDriver:
 	
 	def ValveOn(self, on):
 		'''
+		Does not do much by itself but work in tandem with the pump, when the pump is on turning the valve
+		on will allow you to grab things, turn it off to release the air pressure.
+		
 		@return Returns a tuple where the first element tells whether the command has been successfully
 		received (0 - yes, 1 - timed out), and the second element tells whether the command was added
 		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
