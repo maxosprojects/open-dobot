@@ -76,6 +76,7 @@ Alternatively, you can compile and flash the firmware yourself using a simple bu
 
 # Usage
 In application/fpga/python/ folder you may find the calibration-tool.py to find the offsets of the accelerometers installed on your dobot. Every accelerometer is soldered at a slight angle, which needs to be accounted for when performing calculations. Although that angle is very small, at longer distances (when the arm is stretched) is becomes noticeable and the whole XY plane becomes messed up. So, you don't want that offset not to be accounted for.
+However, as it is explained in https://github.com/maxosprojects/open-dobot/issues/19, the accelerometers themselves have a significant sensing error and the calibration may be skipped altogether given the accelerometers on your Dobot are not terribly poorly soldered (about one degree inclination relative to the PCB the accelerometer is soldered to will be fine).
 
 In the same folder you may find some examples that use the driver directly, SDK and more. Read the descriptions in those examples before executing.
 
