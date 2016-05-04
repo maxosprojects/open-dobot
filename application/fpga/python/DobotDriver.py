@@ -50,11 +50,11 @@ class DobotDriver:
 
 	def Open(self, timeout=0.025):
 		try:
-			self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.01)
+			self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.1)
 			# Have to wait for Arduino initialization to finish, or else it doesn't boot.
 			time.sleep(2)
 		except SerialException as e:
-			print e
+			print(e)
 			exit(1)
 
 	def Close(self):
@@ -74,14 +74,15 @@ class DobotDriver:
 	def _readchecksumword(self):
 		data = self._port.read(2)
 		if len(data)==2:
-			crc = (ord(data[0])<<8) | ord(data[1])
-			return (1,crc)	
+			arr = bytearray(data)
+			crc = (arr[0]<<8) | arr[1]
+			return (1,crc)
 		return (0,0)
 
 	def _readbyte(self):
 		data = self._port.read(1)
 		if len(data):
-			val = ord(data)
+			val = bytearray(data)[0]
 			self._crc_update(val)
 			return (1,val)	
 		return (0,0)
@@ -125,7 +126,7 @@ class DobotDriver:
 				crc = self._readchecksumword()
 				if crc[0]:
 					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						# raise Exception('crc differs', self._crc, crc)
+						# raise Exception('crc differs', self._crc&0xFFF, crc[1]&0xFFFF)
 						return (0,0)
 					return (1,val1[1])
 			trys -= 1
@@ -145,7 +146,7 @@ class DobotDriver:
 					crc = self._readchecksumword()
 					if crc[0]:
 						if self._crc&0xFFFF!=crc[1]&0xFFFF:
-							# raise Exception('crc differs', self._crc, crc)
+							# raise Exception('crc differs', self._crc&0xFFF, crc[1]&0xFFFF)
 							return (0,0,0)
 						return (1,val1[1],val2[1])
 			trys -= 1
@@ -221,7 +222,7 @@ class DobotDriver:
 
 	def _writebyte(self, val):
 		self._crc_update(val&0xFF)
-		self._port.write(chr(val&0xFF))
+		self._port.write(bytearray([val&0xFF]))
 
 	def _writeword(self, val):
 		self._writebyte((val>>8)&0xFF)
@@ -234,13 +235,13 @@ class DobotDriver:
 		self._writebyte(val&0xFF)
 
 	def _writechecksum(self):
-		self._port.write(chr((self._crc>>8)&0xFF))
-		self._port.write(chr(self._crc&0xFF))
+		self._port.write(bytearray([(self._crc>>8)&0xFF]))
+		self._port.write(bytearray([self._crc&0xFF]))
+		self._port.flush()
 
 	def _sendcommand(self, command):
 		self._crc_clear()
-		self._crc_update(command)
-		self._port.write(chr(command))
+		self._writebyte(command)
 
 	def _write(self, cmd, write_commands=list()):
 		trys = _max_trys
