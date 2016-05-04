@@ -10,6 +10,7 @@ Laser going in a straight line.
 from DobotSDK import Dobot
 import time
 
+# dobot = Dobot('COM4', debug=True)
 dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 
 # Enable calibration routine if you have a limit switch/photointerrupter installed on the arm.

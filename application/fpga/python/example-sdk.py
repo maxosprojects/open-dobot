@@ -30,6 +30,7 @@ speed = 700
 acceleration = 400
 
 # dobot = Dobot('/dev/tty.usbmodem1421', debug=True, fake=True)
+# dobot = Dobot('COM4', debug=True)
 dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 # dobot = Dobot('/dev/tty.BT4-SPP-SerialPort', debug=True, timeout=0.3)
 

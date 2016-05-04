@@ -61,8 +61,9 @@ class DobotInverseKinematics:
 			# Since "print" is not a function the expansion (*) cannot be used
 			# as it is not an operator. So this is a workaround.
 			for arg in args:
-				print arg,
-			print
+				sys.stdout.write(str(arg))
+				sys.stdout.write(' ')
+			print('')
 
 	#input:
 	#cartesian (x,y,z) coordinate
@@ -148,7 +149,7 @@ class DobotInverseKinematics:
 		# max empirically determined to be around 107 - 108 degrees. Using 105.
 		# min empirically determined to be around -23/24 degrees. Using -20.
 		if (-20 > rearArmAngle > 105):
-			print 'Rear arm angle out of range'
+			print('Rear arm angle out of range')
 			ret = False
 
 		# check the foreArmAngle
@@ -157,7 +158,7 @@ class DobotInverseKinematics:
 		# min empirically determined to be around -105 degrees. Using -102.
 		# max empirically determined to be around 21 degrees. Using 18.
 		if (-102 > foreArmAngle > 18):
-			print 'Fore arm angle out of range'
+			print('Fore arm angle out of range')
 			ret = False
 
 		return ret
