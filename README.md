@@ -58,7 +58,7 @@ The fact that the Arduino board does not actually control the arm but delegates 
 
 You will only need:
 - [DobotTools](http://dobot.cc/download.php) or avrdude directly (included in Arduino IDE) to flash the firmware
-- [Python](https://www.python.org) to run application software and examples
+- [Python](https://www.python.org) to run application software and examples (open-dobot 1.0 supports only Python 2.7, however, current ```master``` branch has support for Python 2.7 and 3.x and upcoming open-dobot 1.1 will have that change).
 
 ---
 
