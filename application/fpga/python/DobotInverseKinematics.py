@@ -63,7 +63,7 @@ class DobotInverseKinematics:
 			for arg in args:
 				sys.stdout.write(str(arg))
 				sys.stdout.write(' ')
-			print()
+			print('')
 
 	#input:
 	#cartesian (x,y,z) coordinate

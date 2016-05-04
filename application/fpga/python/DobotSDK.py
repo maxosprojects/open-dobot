@@ -96,7 +96,7 @@ class Dobot:
 			for arg in args:
 				sys.stdout.write(str(arg))
 				sys.stdout.write(' ')
-			print()
+			print('')
 
 	def _initializeAccelerometers(self):
 		print("--=========--")
