@@ -17,6 +17,7 @@ https://www.sparkfun.com/products/9322
 
 from DobotDriver import DobotDriver
 
+# driver = DobotDriver('COM4')
 driver = DobotDriver('/dev/tty.usbmodem1421')
 driver.Open()
 
@@ -25,4 +26,4 @@ driver.Open()
 # Switch is expected to be connected (soldered) to pin D8 and pulled up (HIGH) externally (with a
 # resistor to 5V supply) or be an active device (like a photointerrupter). Pullup is not enabled on that pin.
 
-print driver.CalibrateJoint(1, driver.freqToCmdVal(1000), driver.freqToCmdVal(50), 1, 5, 1, 0)
+print(driver.CalibrateJoint(1, driver.freqToCmdVal(1000), driver.freqToCmdVal(50), 1, 5, 1, 0))

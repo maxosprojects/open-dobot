@@ -33,7 +33,12 @@ from DobotDriver import DobotDriver
 from DobotInverseKinematics import DobotInverseKinematics
 import timeit
 import math
-import matplotlib.pyplot as plt
+import sys
+# import matplotlib.pyplot as plt
+
+# Workaround to support Python 2/3
+if sys.version_info > (3,):
+	long = int
 
 piHalf = math.pi / 2.0
 piTwo = math.pi * 2.0
@@ -82,9 +87,6 @@ class Dobot:
 			self._rearSteps = long(0)
 			self._foreSteps = long(0)
 		else:
-			# self._baseSteps = long(0)
-			# self._rearSteps = long(0)
-			# self._foreSteps = long(0)
 			self._initializeAccelerometers()
 
 	def _debug(self, *args):
@@ -92,11 +94,12 @@ class Dobot:
 			# Since "print" is not a function the expansion (*) cannot be used
 			# as it is not an operator. So this is a workaround.
 			for arg in args:
-				print arg,
-			print
+				sys.stdout.write(str(arg))
+				sys.stdout.write(' ')
+			print()
 
 	def _initializeAccelerometers(self):
-		print "--=========--"
+		print("--=========--")
 		accels = self._driver.GetAccelerometers()
 		accelRear = accels[1]
 		accelFore = accels[2]
@@ -106,13 +109,13 @@ class Dobot:
 		self._rearSteps = long((rearAngle / math.pi / 2.0) * rearArmActualStepsPerRevolution + 0.5)
 		self._foreSteps = long((foreAngle / math.pi / 2.0) * foreArmActualStepsPerRevolution + 0.5)
 		self._driver.SetCounters(self._baseSteps, self._rearSteps, self._foreSteps)
-		print "Initializing with steps:", self._baseSteps, self._rearSteps, self._foreSteps
-		print "Reading back what was set:", self._driver.GetCounters()
+		print("Initializing with steps:", self._baseSteps, self._rearSteps, self._foreSteps)
+		print("Reading back what was set:", self._driver.GetCounters())
 		currBaseAngle = piTwo * self._baseSteps / baseActualStepsPerRevolution
 		currRearAngle = piHalf - piTwo * self._rearSteps / rearArmActualStepsPerRevolution
 		currForeAngle = piTwo * self._foreSteps / foreArmActualStepsPerRevolution
-		print 'Current estimated coordinates:', self._getCoordinatesFromAngles(currBaseAngle, currRearAngle, currForeAngle)
-		print "--=========--"
+		print('Current estimated coordinates:', self._getCoordinatesFromAngles(currBaseAngle, currRearAngle, currForeAngle))
+		print("--=========--")
 
 	def _moveArmToAngles(self, baseAngle, rearArmAngle, foreArmAngle, duration):
 		self._baseAngle = baseAngle
@@ -322,7 +325,7 @@ class Dobot:
 		else:
 			accelf = float(accel)
 
-		print "--=========--"
+		print("--=========--")
 		self._debug('maxVel', maxVel)
 		self._debug('accelf', accelf)
 

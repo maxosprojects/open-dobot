@@ -18,6 +18,11 @@ import threading
 import time
 from serial import SerialException
 import math
+import sys
+
+# Workaround to support Python 2/3
+if sys.version_info > (3,):
+	long = int
 
 _max_trys = 1
 
