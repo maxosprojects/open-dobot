@@ -68,12 +68,24 @@ The information provided here is a collective effort of enthusiasts who wanted t
 ---
 
 # Installation
+### Python
 You will need Python 2.7 or Python 3.x. Download [here](https://www.python.org) and install.
 
 open-dobot 1.0 supports only Python 2.7, however, current ```master``` branch has support for Python 2.7 and 3.x and upcoming open-dobot 1.1 will have that change.
 
-You will also need ```pyserial``` module. If it is not installed (exception are thrown when executing examples referring to not being able to find ```serial``` module) install it using ```pip``` (```pip``` should be installed with Python in your system).
+You will also need ```pyserial``` module.
 
+If pyserial is not installed (exceptions are thrown when executing examples referring to not being able to find ```serial``` module) install it using ```pip``` (```pip``` should be installed with Python in your system):
+
+On Windows:
+
+```pip install pyserial```
+
+On *nix you may need to do that with sudo (depends on how Python/pip was installed):
+
+```sudo pip install pyserial```
+
+### Firmware
 Always prefer latest [Release](https://github.com/maxosprojects/open-dobot/releases) version, for everything - the compiled firmware, source code and examples. 
 Unless you know what you are doing and want to try out experimental features DON'T use the code in any of the branches, including *master*.
 
