@@ -85,8 +85,8 @@ On *nix you may need to do that with sudo (depends on how Python/pip was install
 
 ```sudo pip install pyserial```
 
-### Device Name
-On Linux, you can use udev-rules to create a reliable device name for the dobot: [udev-rules](https://github.com/maxosprojects/open-dobot/wiki/Setting-up-udev-rules-for-a-consistent-device-name-on-Linux)
+#### Permanent Device Name on Linux
+On Linux, you can use udev-rules to create a permanent device name for the dobot: [udev-rules](https://github.com/maxosprojects/open-dobot/wiki/Setting-up-udev-rules-for-a-consistent-device-name-on-Linux)
 
 ### Firmware
 Always prefer latest [Release](https://github.com/maxosprojects/open-dobot/releases) version, for everything - the compiled firmware, source code and examples. 
