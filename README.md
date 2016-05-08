@@ -33,6 +33,15 @@ The fact that the Arduino board does not actually control the arm but delegates 
 
 ---
 
+# Supported platforms
+Any platform where Python can run is supported. Tested on the following:
+- Linux
+- Windows
+- Mac
+- Rapsberry Pi (well, also Linux)
+
+---
+
 # Features implemented so far
 - direct control over the FPGA board from application level (DobotDriver.py)
 - reliable and fast communication to the host system via USB
