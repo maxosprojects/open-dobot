@@ -9,7 +9,7 @@ Use this tool to find offsets for your accelerometers:
 1. Turn off power on the arm and disconnect USB cable
 2. Remove accelerometers from the arm and put them on a flat surface that has no inclination
 3. Connect USB cable
-4. Enable accelerometers reporting mode
+4. Enable accelerometers reporting mode:
 4.1. Press and hold the "Sensor Calibration" button
 4.2. Press and release the "Reset" button
 4.3. Start this tool (still holding "Sensor Calibration" button)
