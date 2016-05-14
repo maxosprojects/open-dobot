@@ -128,21 +128,23 @@ volatile byte sequenceRest[19] = {
 };
 
 /*
- * This is the list of pins unused by the top board (FPGA board).
- * !!!!! BEFORE CHANGING ANY OF THESE:  !!!!!!
- * 1. Check you're not targeting USART pins
- * 2. Check you're not targeting any communication and control pins
- *
  * Refer to open-dobot/docs/images/arduino.jpg
  * 
  * Communication and control pins in use are:
  * D0-1 (USB serial), D12 (laser), D18-21 (bluetooth serial, I2C),
- * D40-53 (FPGA control, D48 - bluetooth enable, D41 - pump, D43 - valve),
+ * D40-53 (FPGA control, D48 - bluetooth enable, D41 - pump, D43 - valve)
+ *
+ * Unused pins:
  * D59-D61 (unknown, but soldered)
  * 
  * Some of the unused pins are not soldered through to the FPGA board
  * and can be used here:
  * D54-58, D62-69, D22-39
+ *
+ * This is the list of pins unused by the top board (FPGA board).
+ * !!!!! BEFORE CHANGING ANY OF THESE:  !!!!!!
+ * 1. Check you're not targeting USART pins
+ * 2. Check you're not targeting any communication and control pins
  */
 SwitchPort calibrationPins[] = {
   {
