@@ -131,11 +131,11 @@ volatile byte sequenceRest[19] = {
  * Refer to open-dobot/docs/images/arduino.jpg
  * 
  * Communication and control pins in use are:
- * D0-1 (USB serial), D12 (laser), D18-21 (bluetooth serial, I2C),
+ * D0-1 (USB serial), D12 (laser), D18-19 (bluetooth serial),
  * D40-53 (FPGA control, D48 - bluetooth enable, D41 - pump, D43 - valve)
  *
  * Unused pins:
- * D59-D61 (unknown, but soldered)
+ * D59-D61 (unknown, but soldered), D20-21 (I2C)
  * 
  * Some of the unused pins are not soldered through to the FPGA board
  * and can be used here:
