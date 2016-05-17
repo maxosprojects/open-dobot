@@ -223,58 +223,60 @@ inline byte processCommand() {
 inline void processSerialBuffer() {
   int iterationsLeft = 10000;
   while (iterationsLeft > 0) {
-    if (processCommand()) {
-      iterationsLeft -= 2000;
-    } else {
+    byte result = processCommand();
+    if (result == 0) {
       iterationsLeft -= 1;
+    } else if (result == 1) {
+      iterationsLeft -= 5;
+    } else {
+      iterationsLeft -= 300;
     }
     serialRead();
   }
-
 }
 
 // CMD: Returns magic number to indicate that the controller is alive.
 byte cmdReady() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 3) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 1)) {
-    return 0;
+    return 2;
   }
   // Return magic number.
   cmd[0] = 0x40;
   write1(cmd);
-  return 1;
+  return 3;
 }
 
 // CMD: Adds a command to the queue.
 byte cmdSteps() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 20) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 18)) {
-    return 0;
+    return 2;
   }
   currGripper = cmd[14] | cmd[15] << 8;
   currToolRotation = cmd[16] | cmd[17] << 8;
   cmd[0] = cmdQueue.appendHead((ulong*) &cmd[1], (ulong*) &cmd[5], (ulong*) &cmd[9], &cmd[13], currGripper, currToolRotation, Move);
   write1(cmd);
-  return 1;
+  return 3;
 }
 
 // CMD: Starts calibration routine.
 byte cmdCalibrateJoint() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 13) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 11)) {
-    return 0;
+    return 2;
   }
   // The received command has the following structure:
   // long - forward speed
@@ -285,26 +287,26 @@ byte cmdCalibrateJoint() {
   byte ctrl = cmd[10];
   byte joint = ctrl & 0x03;
   if (joint == 3) {
-    return 0;
+    return 2;
   }
   cmdQueue.clear();
   calibrator.start(pin, ctrl, (ulong*) &cmd[1], (ulong*) &cmd[5], currGripper, currToolRotation);
   write0();
-  return 1;
+  return 3;
 }
 
 // CMD: Returns data read from accelerometers.
 byte cmdGetAccels() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 3) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 1)) {
-    return 0;
+    return 2;
   }
   write22(cmd, &accelRear, &accelFront);
-  return 1;
+  return 3;
 }
 
 // CMD: Stops the arm by clearing command buffer and stopping calibrator
@@ -312,58 +314,58 @@ byte cmdGetAccels() {
 byte cmdEmergencyStop() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 3) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 1)) {
-    return 0;
+    return 2;
   }
   cmdQueue.clear();
   calibrator.stop();
   write0();
-  return 1;
+  return 3;
 }
 
 // CMD: Sets joint counters to the received values.
 byte cmdSetCounters() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 15) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 13)) {
-    return 0;
+    return 2;
   }
   motorPositionBase = ((long)cmd[1] << 24) | ((long)cmd[2] << 16) | ((long)cmd[3] << 8) | (long)cmd[4];
   motorPositionRear = ((long)cmd[5] << 24) | ((long)cmd[6] << 16) | ((long)cmd[7] << 8) | (long)cmd[8];
   motorPositionFore = ((long)cmd[9] << 24) | ((long)cmd[10] << 16) | ((long)cmd[11] << 8) | (long)cmd[12];
   write0();
-  return 1;
+  return 3;
 }
 
 // CMD: Returns current counters for all joints.
 byte cmdGetCounters() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 3) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 1)) {
-    return 0;
+    return 2;
   }
   write444(cmd, (ulong*)&motorPositionBase, (ulong*)&motorPositionRear, (ulong*)&motorPositionFore);
-  return 1;
+  return 3;
 }
 
 // CMD: Enables/Disables Laser
 byte cmdLaserOn() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 4) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 2)) {
-    return 0;
+    return 2;
   }
   byte on = cmd[1];
   if (on) {
@@ -372,18 +374,18 @@ byte cmdLaserOn() {
     cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, LaserOff);
   }
   write1(cmd);
-  return 1;
+  return 3;
 }
 
 // CMD: Enables/Disables Pump
 byte cmdPumpOn() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 4) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 2)) {
-    return 0;
+    return 2;
   }
   byte on = cmd[1];
   if (on) {
@@ -392,18 +394,18 @@ byte cmdPumpOn() {
     cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, PumpOff);
   }
   write1(cmd);
-  return 1;
+  return 3;
 }
 
 // CMD: Enables/Disables Valve
 byte cmdValveOn() {
   // Check if not enough bytes yet.
   if (cmdInBuffIndex < 4) {
-    return 0;
+    return 1;
   }
   cmdInBuffIndex = 0;
   if (!checkCrc(cmd, 2)) {
-    return 0;
+    return 2;
   }
   byte on = cmd[1];
   if (on) {
@@ -412,7 +414,7 @@ byte cmdValveOn() {
     cmd[0] = cmdQueue.appendHead(0, 0, 0, 0, 0, 0, ValveOff);
   }
   write1(cmd);
-  return 1;
+  return 3;
 }
 
 void laserOn() {
