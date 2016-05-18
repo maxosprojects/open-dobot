@@ -19,6 +19,7 @@ import time
 from serial import SerialException
 import math
 import sys
+from serial_aggregator import serial_aggregator
 
 # Workaround to support Python 2/3
 if sys.version_info > (3,):
@@ -43,7 +44,6 @@ piToDegrees = 180.0 / math.pi
 halfPi = math.pi / 2.0
 
 stopSeq = 0x0242f000
-# stopSeq = 0x40420f00
 
 class DobotDriver:
 	def __init__(self, comport, rate=115200):
@@ -55,7 +55,15 @@ class DobotDriver:
 
 	def Open(self, timeout=0.025):
 		try:
-			self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.1)
+			self._port = serial_aggregator(serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.1))
+			# self._port = serial.Serial(self._comport, baudrate=self._rate, timeout=timeout, interCharTimeout=0.1)
+
+			# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			# s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+			# s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 2)
+			# s.connect(("localhost", 5555))
+			# self._port = serial2socket(s)
+
 			# Have to wait for Arduino initialization to finish, or else it doesn't boot.
 			time.sleep(2)
 		except SerialException as e:
@@ -121,109 +129,44 @@ class DobotDriver:
 		return (0,0)
 
 	def _read1(self, cmd):
-		trys = _max_trys
-		while trys:
-			self._port.flushInput()
-			self._sendcommand(cmd)
-			self._writechecksum()
-			val1 = self._readbyte()
-			if val1[0]:
-				crc = self._readchecksumword()
-				if crc[0]:
-					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						# raise Exception('crc differs', self._crc&0xFFF, crc[1]&0xFFFF)
-						return (0,0)
-					return (1,val1[1])
-			trys -= 1
-		# raise Exception("couldn't get response in time for", _max_trys, 'times')
-		return (0,0)
+		return self._read(cmd, [self._readbyte])
 
 	def _read22(self, cmd):
-		trys = _max_trys
-		while trys:
-			self._port.flushInput()
-			self._sendcommand(cmd)
-			self._writechecksum()
-			val1 = self._readword()
-			if val1[0]:
-				val2 = self._readword()
-				if val2[0]:
-					crc = self._readchecksumword()
-					if crc[0]:
-						if self._crc&0xFFFF!=crc[1]&0xFFFF:
-							# raise Exception('crc differs', self._crc&0xFFF, crc[1]&0xFFFF)
-							return (0,0,0)
-						return (1,val1[1],val2[1])
-			trys -= 1
-		# raise Exception("couldn't get response in time for", _max_trys, 'times')
-		return (0,0,0)
+		return self._read(cmd, [self._readword,
+								self._readword])
 
 	def _read4(self, cmd):
-		trys = _max_trys
-		while trys:
-			self._port.flushInput()
-			self._sendcommand(cmd)
-			val1 = self._readlong()
-			if val1[0]:
-				crc = self._readchecksumword()
-				if crc[0]:
-					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						return (0,0)
-					return (1,val1[1])
-			trys -= 1
-		return (0,0)
+		return self._read(cmd, [self._readlong])
 
-	def _read4(self, cmd):
-		trys = _max_trys
-		while trys:
-			self._port.flushInput()
-			self._sendcommand(cmd)
-			val1 = self._readlong()
-			if val1[0]:
-				crc = self._readchecksumword()
-				if crc[0]:
-					if self._crc&0xFFFF!=crc[1]&0xFFFF:
-						return (0,0)
-					return (1,val1[1])
-			trys -= 1
-		return (0,0)
-
-	def _read4_1(self, cmd):
-		trys = _max_trys
-		while trys:
-			self._port.flushInput()
-			self._sendcommand(cmd)
-			val1 = self._readslong()
-			if val1[0]:
-				val2 = self._readbyte()
-				if val2[0]:
-					crc = self._readchecksumword()
-					if crc[0]:
-						if self._crc&0xFFFF!=crc[1]&0xFFFF:
-							return (0,0)
-						return (1,val1[1],val2[1])
-			trys -= 1
-		return (0,0)
+	def _read41(self, cmd):
+		return self._read(cmd, [self._readslong,
+								self._readbyte])
 
 	def _reads444(self, cmd):
+		return self._read(cmd, [self._readslong,
+								self._readslong,
+								self._readslong])
+
+	def _read(self, cmd, read_commands=list()):
 		trys = _max_trys
 		while trys:
-			self._port.flushInput()
 			self._sendcommand(cmd)
 			self._writechecksum()
-			val1 = self._readslong()
-			if val1[0]:
-				val2 = self._readslong()
-				if val2[0]:
-					val3 = self._readslong()
-					if val3[0]:
-						crc = self._readchecksumword()
-						if crc[0]:
-							if self._crc&0xFFFF!=crc[1]&0xFFFF:
-								return (0,0,0,0)
-							return (1,val1[1],val2[1],val3[1])
+			self._port.send()
+
+			ret = [1]
+			for c in read_commands:
+				val = c()
+				if not val[0]:
+					return [0] * (len(read_commands) + 1)
+				ret.append(val[1])
+
+			crc = self._readchecksumword()
+			if crc[0]:
+				if self._crc&0xFFFF == crc[1]&0xFFFF:
+					return tuple(ret)
 			trys -= 1
-		return (0,0,0,0)
+		return [0] * (len(read_commands) + 1)
 
 	def _writebyte(self, val):
 		self._crc_update(val&0xFF)
@@ -242,7 +185,6 @@ class DobotDriver:
 	def _writechecksum(self):
 		self._port.write(bytearray([(self._crc>>8)&0xFF]))
 		self._port.write(bytearray([self._crc&0xFF]))
-		self._port.flush()
 
 	def _sendcommand(self, command):
 		self._crc_clear()
@@ -257,6 +199,7 @@ class DobotDriver:
 				c[0](c[1])
 
 			self._writechecksum()
+			self._port.send()
 			crc = self._readchecksumword()
 			if crc[0]:
 				if self._crc&0xFFFF == crc[1]&0xFFFF:
@@ -293,13 +236,13 @@ class DobotDriver:
 	def _write_read(self, cmd, write_commands):
 		tries = _max_trys
 		while tries:
-			self._port.flushInput()
 			self._sendcommand(cmd)
 
 			for c in write_commands:
 				c[0](c[1])
 
 			self._writechecksum()
+			self._port.send()
 			ret = self._readbyte()
 			if ret[0]:
 				crc = self._readchecksumword()
@@ -582,7 +525,6 @@ class DobotDriver:
 #		self._lock.acquire()
 		i = 0
 		while i < 5:
-			self._port.flushInput()
 			self._port.read(1)
 			i += 1
 		self._crc_clear()
