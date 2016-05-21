@@ -80,8 +80,6 @@ The information provided here is a collective effort of enthusiasts who wanted t
 ### Python
 You will need Python 2.7 or Python 3.x. Download [here](https://www.python.org) and install.
 
-open-dobot 1.0 supports only Python 2.7, however, current ```master``` branch has support for Python 2.7 and 3.x and upcoming open-dobot 1.1 will have that change.
-
 You will also need ```pyserial``` module.
 
 If pyserial is not installed (exceptions are thrown when executing examples referring to not being able to find ```serial``` module) install it using ```pip``` (```pip``` should be installed with Python in your system):
