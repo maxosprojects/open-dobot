@@ -64,6 +64,9 @@ typedef struct {
   volatile byte* ddr;
 } SwitchPort;
 
+void setup();
+inline void processSerialBuffer();
+uint accelRead(unsigned char pin);
 byte cmdReady();
 byte cmdSteps();
 byte cmdExecQueue();
