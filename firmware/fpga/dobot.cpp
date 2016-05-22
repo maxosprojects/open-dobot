@@ -11,7 +11,7 @@ Version: 0.5.0
 License: MIT
 */
 
-// #define DEBUG
+#define DEBUG
 
 #define F_CPU 16000000UL
 #define BAUD 115200
@@ -58,8 +58,9 @@ License: MIT
 #define CMD_LASER_ON 9
 #define CMD_PUMP_ON 10
 #define CMD_VALVE_ON 11
+#define CMD_BOARD_VERSION 12
 // DO NOT FORGET TO UPDATE cmdArray SIZE!
-funcPtrs cmdArray[12];
+funcPtrs cmdArray[13];
 // Last index in the commands pointers array.
 int cmdPtrArrayLastIndex;
 
@@ -107,6 +108,7 @@ void setup() {
   cmdArray[CMD_LASER_ON] = cmdLaserOn;
   cmdArray[CMD_PUMP_ON] = cmdPumpOn;
   cmdArray[CMD_VALVE_ON] = cmdValveOn;
+  cmdArray[CMD_BOARD_VERSION] = cmdBoardVersion;
   cmdPtrArrayLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
 
   implementationFunctions[LaserOn] = laserOn;
@@ -449,19 +451,19 @@ void serialInit(void) {
 
 void initDebug() {
 #ifdef DEBUG
-  DDRH |= (1<<PORTH5);
+  DDRH |= (1<<PORTH1);
 #endif
 }
 
 inline void debugOn() {
 #ifdef DEBUG
-  PORTH |= (1<<PORTH5);
+  PORTH |= (1<<PORTH1);
 #endif
 }
 
 inline void debugOff() {
 #ifdef DEBUG
-  PORTH &= ~(1<<PORTH5);
+  PORTH &= ~(1<<PORTH1);
 #endif
 }
 

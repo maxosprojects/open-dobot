@@ -39,11 +39,10 @@ CMD_GET_COUNTERS = 8
 CMD_LASER_ON = 9
 CMD_PUMP_ON = 10
 CMD_VALVE_ON = 11
+CMD_BOARD_VERSION = 12
 
 piToDegrees = 180.0 / math.pi
 halfPi = math.pi / 2.0
-
-stopSeq = 0x0242f000
 
 class DobotDriver:
 	def __init__(self, comport, rate=115200):
@@ -69,6 +68,24 @@ class DobotDriver:
 		except SerialException as e:
 			print(e)
 			exit(1)
+
+		ret = (0, 0)
+		while not ret[0]:
+			ret = self.BoardVersion()
+		self._ramps = bool(ret[1])
+		if self._ramps:
+			print("Board: RAMPS")
+		else:
+			print("Board: FPGA")
+
+		if self._ramps:
+			self._stepCoeff = 20000
+			self._stopSeq = self.reverseBits32(0)
+		else:
+			self._stepCoeff = 500000
+			self._stopSeq = 0x0242f000
+		self._stepCoeffOver2 = self._stepCoeff / 2
+		self._freqCoeff = self._stepCoeff * 25
 
 	def Close(self):
 		self._port.close()
@@ -295,8 +312,8 @@ class DobotDriver:
 		Converts stepping frequency into a command value that dobot takes.
 		'''
 		if freq == 0:
-			return stopSeq
-		return self.reverseBits32(long(25000000/freq))
+			return self._stopSeq
+		return self.reverseBits32(long((self._freqCoeff) / freq))
 
 	def stepsToCmdVal(self, steps):
 		'''
@@ -304,8 +321,8 @@ class DobotDriver:
 		takes to set the stepping frequency.
 		'''
 		if steps == 0:
-			return stopSeq
-		return self.reverseBits32(long(500000/steps))
+			return self._stopSeq
+		return self.reverseBits32(long(self._stepCoeff / steps))
 
 	def stepsToCmdValFloat(self, steps):
 		'''
@@ -317,13 +334,14 @@ class DobotDriver:
 				into 20ms interval a command runs for
 		'''
 		if abs(steps) < 0.01:
-			return (stopSeq, 0, 0.0)
+			return (self._stopSeq, 0, 0.0)
 		actualSteps = long(round(steps))
 		if actualSteps == 0:
-			return (stopSeq, 0, steps)
-		val = long(500000 / actualSteps)
+			return (self._stopSeq, 0, steps)
+		val = long(self._stepCoeff / actualSteps)
+		actualSteps = long(self._stepCoeff / val)
 		if val == 0:
-			return (stopSeq, 0, steps)
+			return (self._stopSeq, 0, steps)
 		return (self.reverseBits32(val), actualSteps, steps - actualSteps)
 
 	def accelToAngle(self, val, offset):
@@ -507,6 +525,16 @@ class DobotDriver:
 			result = self._write1read1(CMD_VALVE_ON, 1)
 		else:
 			result = self._write1read1(CMD_VALVE_ON, 0)
+		self._lock.release()
+		return result
+
+	def BoardVersion(self):
+		'''
+		Checks board version.
+		Returns (success, version), where version=0 is FPGA and version=1 is RAMPS.
+		'''
+		self._lock.acquire()
+		result = self._read1(CMD_BOARD_VERSION)
 		self._lock.release()
 		return result
 

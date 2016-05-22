@@ -5,80 +5,134 @@ RAMPS version routines.
 
 #include <avr/interrupt.h>
 
-#define X_STEP_PIN PORTF0
-#define X_STEP_PORT PORTF
-#define X_STEP_DDR DDRF
-#define X_STEP_PIN1 PORTF1
-#define X_STEP_PIN2 PORTF2
-#define CLOCK_PIN PORTH3
-#define CLOCK_PORT PORTH
-#define CLOCK_PORTIN PINH
-#define CLOCK_DDR DDRH
+#define X_STEP_PIN         PORTF0
+#define X_STEP_PORT        PORTF
+#define X_STEP_DDR         DDRF
+#define X_DIR_PIN          PORTF1
+#define X_DIR_PORT         PORTF
+#define X_DIR_DDR          DDRF
+#define X_ENABLE_PIN       PORTD7
+#define X_ENABLE_PORT      PORTD
+#define X_ENABLE_DDR       DDRD
+
+#define Y_STEP_PIN         PORTF6
+#define Y_STEP_PORT        PORTF
+#define Y_STEP_DDR         DDRF
+#define Y_DIR_PIN          PORTF7
+#define Y_DIR_PORT         PORTF
+#define Y_DIR_DDR          DDRF
+#define Y_ENABLE_PIN       PORTF2
+#define Y_ENABLE_PORT      PORTF
+#define Y_ENABLE_DDR       DDRF
+
+// #define Z_STEP_PIN         PORTL3
+// #define Z_STEP_PORT        PORTL
+// #define Z_STEP_DDR         DDRL
+// #define Z_DIR_PIN          PORTL1
+// #define Z_ENABLE_PIN       PORTK0
+
+// Use E0 instead of Z as it is not easy to connect dobot to Z.
+// Left named as Z to avoif renaming.
+#define Z_STEP_PIN         PORTA4
+#define Z_STEP_PORT        PORTA
+#define Z_STEP_DDR         DDRA
+#define Z_DIR_PIN          PORTA6
+#define Z_DIR_PORT         PORTA
+#define Z_DIR_DDR          DDRA
+#define Z_ENABLE_PIN       PORTA2
+#define Z_ENABLE_PORT      PORTA
+#define Z_ENABLE_DDR       DDRA
+
+// At 50kHz how many ticks pass between TIMER5_COMPA_vect ISR calls.
+#define TICKS_PER_CALL 40
+// Coefficient that is used in DobotDriver to calculate stepping
+// period.
+#define STEPS_COEFF 20000
+// How long delay does the TIMER1_COMPA_vect ISR introduce.
+// This is to be acoounted for make corresponding adjustments.
+#define ISR_DELAY 80
 
 volatile byte executed = 0;
+volatile byte stepsX = 1;
+volatile byte stepsY = 1;
+volatile byte stepsZ = 1;
+volatile uint ticksX;
+volatile uint ticksY;
+volatile uint ticksZ;
+volatile int ticksLeftX;
+volatile int ticksLeftY;
+volatile int ticksLeftZ;
+
+// CMD: Returns 1 for RAMPS.
+byte cmdBoardVersion() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 3) {
+    return 1;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 1)) {
+    return 2;
+  }
+  // Return 1 for RAMPS.
+  cmd[0] = 1;
+  write1(cmd);
+  return 3;
+}
 
 void setupBoard() {
-  X_STEP_DDR |= (1 << X_STEP_PIN);
-  X_STEP_DDR |= (1 << X_STEP_PIN1);
-  X_STEP_DDR |= (1  << X_STEP_PIN2);
+  X_STEP_DDR |= (1<< X_STEP_PIN);
+  Y_STEP_DDR |= (1<< Y_STEP_PIN);
+  Z_STEP_DDR |= (1<< Z_STEP_PIN);
 
-  CLOCK_DDR |= (1<< CLOCK_PIN);
+  X_DIR_DDR |= (1<< X_DIR_PIN);
+  Y_DIR_DDR |= (1<< Y_DIR_PIN);
+  Z_DIR_DDR |= (1<< Z_DIR_PIN);
 
-  // Turn on timer with 1/8 prescaler (2MHz).
-  // TCCR1B |= _BV(CS11);
-  // Turn on timer with 1/256 prescaler (62.5kHz).
+  X_ENABLE_DDR |= (1<< X_ENABLE_PIN);
+  Y_ENABLE_DDR |= (1<< Y_ENABLE_PIN);
+  Z_ENABLE_DDR |= (1<< Z_ENABLE_PIN);
+
+  // Enable pin is negative, so 0 means motors are enabled.
+  X_ENABLE_PORT &= ~(1<< X_ENABLE_PIN);
+  Y_ENABLE_PORT &= ~(1<< Y_ENABLE_PIN);
+  Z_ENABLE_PORT &= ~(1<< Z_ENABLE_PIN);
+
+  /**
+   * Set up TIMER1_COMPA_vect ISR to execute commands.
+   */
+  // Turn on Timer1 with 1/256 prescaler (62.5kHz) for command interrupts.
   TCCR1B |= (1 << CS12);
-  // Enable timer overflow interrupt.
-  // TIMSK1 |= _BV(TOIE1);
-  // Set compare match register to desired timer count to form ~7kHz
-  // OCR1A = 143;
-  // Set compare match register to desired timer count to form 50Hz
+  // Set compare match register on Timer1 to form 50Hz
   OCR1A = 1250;
-  // Turn on CTC mode
+  // Turn on CTC mode.
   TCCR1B |= (1 << WGM12);
-  // Enable timer compare interrupt
+  // Enable timer compare interrupt.
   TIMSK1 |= (1 << OCIE1A);
 
+  /**
+   * Set up TIMER5_COMPA_vect ISR to toggle pins.
+   */
+  // Configure Timer5 to CTC mode.
+  TCCR5B |= (1 << WGM52);
+  // Start Timer4 at Fcpu/1 (16MHz)
+  TCCR5B |= (1 << CS50);
+  // Set compare match register on Timer1 to form 50kHz
+  OCR5A = 320;
+  // Enable timer compare interrupt (for stepping).
+  TIMSK5 |= (1 << OCIE5A);
 
-
-
-  // --== HW clock toggle ==--
-
-  // Configure timer 4 for CTC mode
-  TCCR4B |= (1 << WGM42);
-  // Enable timer 1 Compare Output channel A in toggle mode
-  TCCR4A |= (1 << COM4A0);
-
-  // Set CTC compare value to 1Hz at 1MHz AVR clock, with a prescaler of 64
-  // OCR4A = 15624;
-  // Get 50Hz for test
-  OCR4A = 20000;
-
-  // Start timer at Fcpu/64
-  // TCCR4B |= ((1 << CS40) | (1 << CS41));
-  // Start timer at Fcpu/8 (2MHz)
-  TCCR4B |= (1 << CS41);
-
+  // Inable interrupts for to execute commands at 50Hz.
   sei();
 }
 
-ISR(TIMER1_OVF_vect) {
-  X_STEP_PORT ^= (1 << X_STEP_PIN);
-}
-
+// Timer1 compare match Interrupt Service Routine.
+// Executes commands at 50Hz.
 ISR(TIMER1_COMPA_vect)
 {
-  X_STEP_PORT ^= (1 << X_STEP_PIN);
-
-  if (CLOCK_PORTIN & (1 << CLOCK_PIN)) {
-    TCCR4C |= (1 << FOC4A);
-  }
-  TCCR4A ^= (1 << COM4A0);
-  TCNT4 = 0;
-  TCCR4A ^= (1 << COM4A0);
-
-  // CLOCK_PORT |= (1<< CLOCK_PIN);
-  // TCCR4A ^= (1 << COM4A0);
+  // Reset pins.
+  X_STEP_PORT &= ~(1 << X_STEP_PIN);
+  Y_STEP_PORT &= ~(1 << Y_STEP_PIN);
+  Z_STEP_PORT &= ~(1 << Z_STEP_PIN);
 
   // Calibration routine.
   if (calibrator.isRunning()) {
@@ -97,17 +151,84 @@ ISR(TIMER1_COMPA_vect)
     }
   // If nothing left in the queue then send STOP.
   } else if (cmdQueue.isEmpty()) {
-      // writeSpiRest();
+    stepsX = 0;
+    stepsY = 0;
+    stepsZ = 0;
   // Some command is waiting to be processed.
   } else {
     Command* command = cmdQueue.peekTail();
     // If movement command then execute.
     if (command->type == Move) {
+      // Remove the command from the queue.
       cmdQueue.popTail();
-      // writeSpi(command);
+      // Execute.
+      // Set current ticks. The rest is taken care of by TIMER5_COMPA_vect.
+      ticksX = (uint) command->j1;
+      ticksY = (uint) command->j2;
+      ticksZ = (uint) command->j3;
+      if (ticksX == 0) {
+        stepsX = 0;
+      } else {
+        X_DIR_PORT &= ~(1 << X_DIR_PIN);
+        X_DIR_PORT |= ((command->control & 0x01) << X_DIR_PIN);
+        ticksLeftX = ticksX - ISR_DELAY;
+        stepsX = STEPS_COEFF / ticksX;
+      }
+      if (ticksY == 0) {
+        stepsY = 0;
+      } else {
+        Y_DIR_PORT &= ~(1 << Y_DIR_PIN);
+        Y_DIR_PORT |= (((command->control >> 1) & 0x01) << Y_DIR_PIN);
+        ticksLeftY = ticksY - ISR_DELAY;
+        stepsY = STEPS_COEFF / ticksY;
+      }
+      if (ticksZ == 0) {
+        stepsZ = 1;
+      } else {
+        Z_DIR_PORT &= ~(1 << Z_DIR_PIN);
+        Z_DIR_PORT |= (((command->control >> 2) & 0x01) << Z_DIR_PIN);
+        ticksLeftZ = ticksZ - ISR_DELAY;
+        stepsZ = STEPS_COEFF / ticksZ;
+      }
     }
   }
   executed = 1;
+}
+
+// Timer5 compare match Interrupt Service Routine.
+// Toggles pins at maximum 20kHz.
+ISR(TIMER5_COMPA_vect)
+{
+  if (stepsX) {
+    ticksLeftX -= TICKS_PER_CALL;
+    if (ticksLeftX < 0) {
+      X_STEP_PORT ^= (1 << X_STEP_PIN);
+      if (X_STEP_PORT & (1 << X_STEP_PIN)) {
+        stepsX--;
+      }
+      ticksLeftX += ticksX;
+    }
+  }
+  if (stepsY) {
+    ticksLeftY -= TICKS_PER_CALL;
+    if (ticksLeftY < 0) {
+      Y_STEP_PORT ^= (1 << Y_STEP_PIN);
+      if (Y_STEP_PORT & (1 << Y_STEP_PIN)) {
+        stepsY--;
+      }
+      ticksLeftY += ticksY;
+    }
+  }
+  if (stepsZ) {
+    ticksLeftZ -= TICKS_PER_CALL;
+    if (ticksLeftZ < 0) {
+      Z_STEP_PORT ^= (1 << Z_STEP_PIN);
+      if (Z_STEP_PORT & (1 << Z_STEP_PIN)) {
+        stepsZ--;
+      }
+      ticksLeftZ += ticksZ;
+    }
+  }
 }
 
 int main() {

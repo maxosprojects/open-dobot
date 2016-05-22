@@ -3,6 +3,22 @@
 FPGA version routines.
 **/
 
+// CMD: Returns 0 for FPGA.
+byte cmdBoardVersion() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 3) {
+    return 1;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 1)) {
+    return 2;
+  }
+  // Return 0 for FPGA.
+  cmd[0] = 0;
+  write1(cmd);
+  return 3;
+}
+
 void setupBoard() {
   //---=== Power-on sequence ===---
   // 1. FPGA_ENABLE_PIN = LOW, FPGA_COMMAND_PIN = LOW

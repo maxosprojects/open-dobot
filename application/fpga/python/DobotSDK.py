@@ -100,9 +100,12 @@ class Dobot:
 
 	def _initializeAccelerometers(self):
 		print("--=========--")
-		accels = self._driver.GetAccelerometers()
-		accelRear = accels[1]
-		accelFore = accels[2]
+		print("Initializing accelerometers")
+		ret = (0, 0, 0)
+		while not ret[0]:
+			ret = self._driver.GetAccelerometers()
+		accelRear = ret[1]
+		accelFore = ret[2]
 		rearAngle = math.pi / 2 - self._driver.accelToRadians(accelRear, accelOffsets[0])
 		foreAngle = self._driver.accelToRadians(accelFore, accelOffsets[1])
 		self._baseSteps = long(0)

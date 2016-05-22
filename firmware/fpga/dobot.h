@@ -79,6 +79,7 @@ byte cmdGetCounters();
 byte cmdLaserOn();
 byte cmdPumpOn();
 byte cmdValveOn();
+byte cmdBoardVersion();
 void crcCcitt(byte data[], int len);
 void crcCcitt(byte data[], int len, byte keepSeed);
 byte read13(byte data[]);
