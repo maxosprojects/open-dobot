@@ -1,4 +1,4 @@
-Check out the official [open-dobot forum](http://open-dobot.no-ip.org)
+# New [open-dobot forum](http://open-dobot.boards.net)
 
 # Table of Contents
 1. [What is open-dobot](#what-is-open-dobot)
