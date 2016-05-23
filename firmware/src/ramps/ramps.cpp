@@ -5,6 +5,7 @@ RAMPS version routines.
 
 #include "ramps.h"
 #include "../main/inlines.h"
+#include "../main/mpu6050/mpu6050.h"
 
 volatile byte executed = 0;
 volatile byte stepsX = 1;
@@ -40,7 +41,39 @@ byte cmdBoardVersion() {
   return 3;
 }
 
+int accelRead(byte pin) {
+  long result = 0;
+  int ax, ay, az;
+  byte i = 20;
+
+  while (i--) {
+    mpu6050_getRawAccels(&ax, &ay, &az);
+    result += ax;
+  }
+  return result / 20;
+}
+
+void switchToAccelReportMode() {
+  while (1) {
+    accelRear = accelRead(0);
+    processSerialBuffer();
+  }
+}
+
 void setupBoard() {
+  // Enable internal pullup on accelerometer reporting mode pin.
+  ACCEL_SWITCH_PORT |= (1<<ACCEL_SWITCH_PIN);
+
+  //init mpu6050
+  mpu6050_init();
+  _delay_ms(50);
+
+  if (! (ACCEL_SWITCH_PORTIN & (1<<ACCEL_SWITCH_PIN))) {
+    switchToAccelReportMode();
+  }
+
+  // accelRear = accelRead(0);
+
   X_STEP_DDR |= (1<< X_STEP_PIN);
   Y_STEP_DDR |= (1<< Y_STEP_PIN);
   Z_STEP_DDR |= (1<< Z_STEP_PIN);
@@ -190,14 +223,6 @@ ISR(TIMER5_COMPA_vect)
       ticksLeftZ += ticksZ;
     }
   }
-}
-
-uint accelRead(unsigned char pin) {
-  return 0;
-}
-
-byte cmdSwitchToAccelReportMode() {
-  return 1;
 }
 
 int main() {

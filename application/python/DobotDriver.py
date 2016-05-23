@@ -124,6 +124,14 @@ class DobotDriver:
 				return (1,val1[1]<<8|val2[1])
 		return (0,0)
 
+	def _readsword(self):
+		val = self._readword()
+		if val[0]:
+			if val[1]&0x8000:
+				return (val[0],val[1]-0x10000)
+			return (val[0],val[1])
+		return (0,0)
+
 	def _readlong(self):
 		val1 = self._readbyte()
 		if val1[0]:
@@ -150,6 +158,10 @@ class DobotDriver:
 	def _read22(self, cmd):
 		return self._read(cmd, [self._readword,
 								self._readword])
+
+	def _reads22(self, cmd):
+		return self._read(cmd, [self._readsword,
+								self._readsword])
 
 	def _read4(self, cmd):
 		return self._read(cmd, [self._readlong])
@@ -439,7 +451,7 @@ class DobotDriver:
 		then averages the result before returning it here.
 		'''
 		self._lock.acquire()
-		result = self._read22(CMD_GET_ACCELS)
+		result = self._reads22(CMD_GET_ACCELS)
 		self._lock.release()
 		return result
 

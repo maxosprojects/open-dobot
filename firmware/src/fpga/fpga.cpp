@@ -193,9 +193,9 @@ byte calibrationPinsNumber() {
   return sizeof(calibrationPins);
 }
 
-uint accelRead(unsigned char pin) {
+int accelRead(byte pin) {
   byte junk;
-  uint result = 0, data;
+  int result = 0, data;
   _delay_us(1);
   // // Clear SPIF bit.
   junk = SPSR;
@@ -227,8 +227,8 @@ uint accelRead(unsigned char pin) {
   return result / 17;
 }
 
-// CMD: Switches controller to accelerometers report mode.
-byte cmdSwitchToAccelReportMode() {
+// Switches controller to accelerometers report mode.
+byte switchToAccelReportMode() {
   /* Apparently there is a problem with the way dobot was designed.
    * It is not possible to switch back from SPI Slave to Master.
    * So this code is left in case a proper solution comes up.
@@ -320,7 +320,7 @@ void setupBoard() {
 
   // Power-on step 2
   if (! (POWERON_PORT & (1<<POWERON_PIN))) {
-    cmdSwitchToAccelReportMode();
+    switchToAccelReportMode();
   }
 
   // Power-on step 3

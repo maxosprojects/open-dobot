@@ -46,6 +46,10 @@ RAMPS version routines.
 #define Z_ENABLE_PORT      PORTA
 #define Z_ENABLE_DDR       DDRA
 
+#define ACCEL_SWITCH_PORT PORTA
+#define ACCEL_SWITCH_PORTIN PINA
+#define ACCEL_SWITCH_PIN PORTA1
+
 // At 50kHz how many ticks pass between TIMER5_COMPA_vect ISR calls.
 #define TICKS_PER_CALL 40
 // Coefficient that is used in DobotDriver to calculate stepping
@@ -57,3 +61,5 @@ RAMPS version routines.
 
 extern CommandQueue cmdQueue;
 extern Calibrator calibrator;
+extern int accelRear;
+extern int accelFront;

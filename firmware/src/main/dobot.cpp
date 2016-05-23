@@ -55,8 +55,8 @@ long motorPositionBase = 0;
 long motorPositionRear = 0;
 long motorPositionFore = 0;
 
-uint accelRear;
-uint accelFront;
+int accelRear;
+int accelFront;
 byte accelReportMode = 0;
 
 void setup() {
@@ -64,7 +64,7 @@ void setup() {
   cmdArray[CMD_STEPS] = cmdSteps;
   cmdArray[CMD_EXEC_QUEUE] = cmdExecQueue;
   cmdArray[CMD_GET_ACCELS] = cmdGetAccels;
-  cmdArray[CMD_SWITCH_TO_ACCEL_REPORT_MODE] = cmdSwitchToAccelReportMode;
+  cmdArray[CMD_SWITCH_TO_ACCEL_REPORT_MODE] = cmdGetAccels;
   cmdArray[CMD_CALIBRATE_JOINT] = cmdCalibrateJoint;
   cmdArray[CMD_EMERGENCY_STOP] = cmdEmergencyStop;
   cmdArray[CMD_SET_COUNTERS] = cmdSetCounters;
@@ -186,7 +186,7 @@ byte cmdGetAccels() {
   if (!checkCrc(cmd, 1)) {
     return 2;
   }
-  write22(cmd, &accelRear, &accelFront);
+  writes22(cmd, &accelRear, &accelFront);
   return 3;
 }
 
@@ -390,6 +390,10 @@ byte write22(byte data[], uint* val1, uint* val2) {
   data[2] = (byte) (*val2 >> 8) & 0xff;
   data[3] = (byte) *val2 & 0xff;
   write4(data);
+}
+
+byte writes22(byte data[], int* val1, int* val2) {
+  return write22(data, (uint*)val1, (uint*)val2);
 }
 
 byte write4(byte data[]) {
