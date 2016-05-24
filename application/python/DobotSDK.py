@@ -101,13 +101,21 @@ class Dobot:
 	def _initializeAccelerometers(self):
 		print("--=========--")
 		print("Initializing accelerometers")
-		ret = (0, 0, 0)
+		ret = (0, 0, 0, 0, 0, 0, 0)
 		while not ret[0]:
 			ret = self._driver.GetAccelerometers()
-		accelRear = ret[1]
-		accelFore = ret[2]
-		rearAngle = math.pi / 2 - self._driver.accelToRadians(accelRear, accelOffsets[0])
-		foreAngle = self._driver.accelToRadians(accelFore, accelOffsets[1])
+		accelRearX = ret[1]
+		accelRearY = ret[2]
+		accelRearZ = ret[3]
+		accelForeX = ret[4]
+		accelForeY = ret[5]
+		accelForeZ = ret[6]
+		if self._driver.isFpga():
+			rearAngle = math.pi / 2.0 - self._driver.accelToRadians(accelRearX, accelOffsets[0])
+			foreAngle = self._driver.accelToRadians(accelForeX, accelOffsets[1])
+		else:
+			rearAngle = math.pi / 2.0 - self._driver.accel3DXToRadians(accelRearX, accelRearY, accelRearZ)
+			foreAngle = self._driver.accel3DXToRadians(accelForeX, accelForeY, accelForeZ)
 		self._baseSteps = long(0)
 		self._rearSteps = long((rearAngle / math.pi / 2.0) * rearArmActualStepsPerRevolution + 0.5)
 		self._foreSteps = long((foreAngle / math.pi / 2.0) * foreArmActualStepsPerRevolution + 0.5)

@@ -50,6 +50,8 @@ class DobotDriver:
 		self._rate = rate
 		self._port = None
 		self._crc = 0xffff
+		self.FPGA = 0
+		self.RAMPS = 1
 
 	def Open(self, timeout=0.025):
 		try:
@@ -69,8 +71,14 @@ class DobotDriver:
 			exit(1)
 
 		ret = (0, 0)
-		while not ret[0]:
+		i = 100
+		while not ret[0] and i > 0:
 			ret = self.BoardVersion()
+			i -= 1
+		if i == 0:
+			print("Cannot get board version. Giving up")
+			exit(1)
+
 		self._ramps = bool(ret[1])
 		if self._ramps:
 			print("Board: RAMPS")
@@ -163,6 +171,14 @@ class DobotDriver:
 		return self._read(cmd, [self._readsword,
 								self._readsword])
 
+	def _reads222222(self, cmd):
+		return self._read(cmd, [self._readsword,
+								self._readsword,
+								self._readsword,
+								self._readsword,
+								self._readsword,
+								self._readsword])
+
 	def _read4(self, cmd):
 		return self._read(cmd, [self._readlong])
 
@@ -186,7 +202,7 @@ class DobotDriver:
 			for c in read_commands:
 				val = c()
 				if not val[0]:
-					return [0] * (len(read_commands) + 1)
+					return tuple([0] * (len(read_commands) + 1))
 				ret.append(val[1])
 
 			crc = self._readchecksumword()
@@ -194,7 +210,7 @@ class DobotDriver:
 				if self._crc&0xFFFF == crc[1]&0xFFFF:
 					return tuple(ret)
 			trys -= 1
-		return [0] * (len(read_commands) + 1)
+		return tuple([0] * (len(read_commands) + 1))
 
 	def _writebyte(self, val):
 		self._crc_update(val&0xFF)
@@ -358,9 +374,21 @@ class DobotDriver:
 	def accelToAngle(self, val, offset):
 		return self.accelToRadians(val, offset) * piToDegrees
 
+	def accel3DXToAngle(self, x, y, z):
+		return self.accel3DXToRadians(x, y, z) * piToDegrees
+
 	def accelToRadians(self, val, offset):
 		try:
 			return math.asin(float(val - offset) / 493.56)
+		except ValueError:
+			return halfPi
+
+	def accel3DXToRadians(self, x, y, z):
+		try:
+			xf = float(x)
+			yf = float(y)
+			zf = float(z)
+			return math.atan2(xf, math.sqrt(yf * yf + zf * zf))
 		except ValueError:
 			return halfPi
 
@@ -447,11 +475,11 @@ class DobotDriver:
 	def GetAccelerometers(self):
 		'''
 		Returns data aquired from accelerometers at power on.
-		There are 17 reads of each accelerometer that the firmware does and
-		then averages the result before returning it here.
+		There are 17 reads in FPGA version and 20 reads in RAMPS version of each accelerometer
+		that the firmware does and then averages the result before returning it here.
 		'''
 		self._lock.acquire()
-		result = self._reads22(CMD_GET_ACCELS)
+		result = self._reads222222(CMD_GET_ACCELS)
 		self._lock.release()
 		return result
 
@@ -548,6 +576,12 @@ class DobotDriver:
 		result = self._read1(CMD_BOARD_VERSION)
 		self._lock.release()
 		return result
+
+	def isFpga(self):
+		return self._ramps == self.FPGA
+
+	def isRamps(self):
+		return self._ramps == self.RAMPS
 
 	def isReady(self):
 		'''

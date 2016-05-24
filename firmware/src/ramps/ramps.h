@@ -1,3 +1,15 @@
+/*
+open-dobot firmware.
+
+Find driver and SDK at https://github.com/maxosprojects/open-dobot
+
+Author: maxosprojects (March 18 2016)
+Additional Authors: <put your name here>
+
+Version: 1.2.0
+
+License: MIT
+*/
 
 /**
 RAMPS version routines.
@@ -61,5 +73,9 @@ RAMPS version routines.
 
 extern CommandQueue cmdQueue;
 extern Calibrator calibrator;
-extern int accelRear;
-extern int accelFront;
+extern int accelRearX;
+extern int accelRearY;
+extern int accelRearZ;
+extern int accelFrontX;
+extern int accelFrontY;
+extern int accelFrontZ;

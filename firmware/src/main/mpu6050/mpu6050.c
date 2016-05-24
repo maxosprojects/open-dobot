@@ -671,9 +671,9 @@ void mpu6050_updateQuaternion() {
 /*
  * update timer for attitude
  */
-ISR(TIMER0_OVF_vect) {
-	mpu6050_updateQuaternion();
-}
+// ISR(TIMER0_OVF_vect) {
+// 	mpu6050_updateQuaternion();
+// }
 
 /*
  * get quaternion

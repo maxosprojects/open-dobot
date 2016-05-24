@@ -1,3 +1,15 @@
+/*
+open-dobot firmware.
+
+Find driver and SDK at https://github.com/maxosprojects/open-dobot
+
+Author: maxosprojects (March 18 2016)
+Additional Authors: <put your name here>
+
+Version: 1.2.0
+
+License: MIT
+*/
 
 #include "../main/dobot.h"
 #include "../main/misc/calibrator.h"
@@ -33,8 +45,12 @@ extern long motorPositionBase;
 extern long motorPositionRear;
 extern long motorPositionFore;
 
-extern uint accelRear;
-extern uint accelFront;
+extern int accelRearX;
+extern int accelRearY;
+extern int accelRearZ;
+extern int accelFrontX;
+extern int accelFrontY;
+extern int accelFrontZ;
 
 extern CommandQueue cmdQueue;
 extern Calibrator calibrator;

@@ -1,3 +1,15 @@
+/*
+open-dobot firmware.
+
+Find driver and SDK at https://github.com/maxosprojects/open-dobot
+
+Author: maxosprojects (March 18 2016)
+Additional Authors: <put your name here>
+
+Version: 1.2.0
+
+License: MIT
+*/
 
 #include "fpga.h"
 #include "../main/inlines.h"
@@ -195,7 +207,8 @@ byte calibrationPinsNumber() {
 
 int accelRead(byte pin) {
   byte junk;
-  int result = 0, data;
+  int result = 0;
+  uint data;
   _delay_us(1);
   // // Clear SPIF bit.
   junk = SPSR;
@@ -261,9 +274,9 @@ byte switchToAccelReportMode() {
     // and return their values to the driver.
     // Process next waiting commands in between or else they will time out.
     while (1) {
-      accelRear = accelRead(FPGA_COMMAND_ACCEL_REAR_SS_PIN);
+      accelRearX = accelRead(FPGA_COMMAND_ACCEL_REAR_SS_PIN);
       processSerialBuffer();
-      accelFront = accelRead(FPGA_COMMAND_ACCEL_FRONT_SS_PIN);
+      accelFrontX = accelRead(FPGA_COMMAND_ACCEL_FRONT_SS_PIN);
       processSerialBuffer();
     }
   // }
@@ -342,8 +355,8 @@ void setupBoard() {
   _delay_us(35);
 
   // Power-on step 8
-  accelRear = accelRead(FPGA_COMMAND_ACCEL_REAR_SS_PIN);
-  accelFront = accelRead(FPGA_COMMAND_ACCEL_FRONT_SS_PIN);
+  accelRearX = accelRead(FPGA_COMMAND_ACCEL_REAR_SS_PIN);
+  accelFrontX = accelRead(FPGA_COMMAND_ACCEL_FRONT_SS_PIN);
 
   // Power-on step 9
   FPGA_COMMAND_PORT &= ~(1<<FPGA_COMMAND_ACCELS_INIT_PIN);

@@ -1,3 +1,15 @@
+/*
+open-dobot firmware.
+
+Find driver and SDK at https://github.com/maxosprojects/open-dobot
+
+Author: maxosprojects (March 18 2016)
+Additional Authors: <put your name here>
+
+Version: 1.2.0
+
+License: MIT
+*/
 
 /**
 RAMPS version routines.
@@ -41,21 +53,27 @@ byte cmdBoardVersion() {
   return 3;
 }
 
-int accelRead(byte pin) {
-  long result = 0;
+void accelRead(byte pin, int *x, int *y, int *z) {
+  long resultX = 0;
+  long resultY = 0;
+  long resultZ = 0;
   int ax, ay, az;
   byte i = 20;
 
   while (i--) {
     mpu6050_getRawAccels(&ax, &ay, &az);
-    result += ax;
+    resultX += ax;
+    resultY += ay;
+    resultZ += az;
   }
-  return result / 20;
+  *x = resultX / 20;
+  *y = resultY / 20;
+  *z = resultZ / 20;
 }
 
 void switchToAccelReportMode() {
   while (1) {
-    accelRear = accelRead(0);
+    accelRead(0, &accelRearX, &accelRearY, &accelRearZ);
     processSerialBuffer();
   }
 }
@@ -69,10 +87,11 @@ void setupBoard() {
   _delay_ms(50);
 
   if (! (ACCEL_SWITCH_PORTIN & (1<<ACCEL_SWITCH_PIN))) {
+    accelReportMode = 1;
     switchToAccelReportMode();
   }
 
-  // accelRear = accelRead(0);
+  // accelRead(0, &accelRearX, &accelRearY, &accelRearZ);
 
   X_STEP_DDR |= (1<< X_STEP_PIN);
   Y_STEP_DDR |= (1<< Y_STEP_PIN);

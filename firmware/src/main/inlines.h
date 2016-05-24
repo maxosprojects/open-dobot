@@ -1,3 +1,23 @@
+/*
+open-dobot firmware.
+
+Find driver and SDK at https://github.com/maxosprojects/open-dobot
+
+Author: maxosprojects (March 18 2016)
+Additional Authors: <put your name here>
+
+Version: 1.2.0
+
+License: MIT
+*/
+
+#define DEBUG ENABLED
+#define DEBUG_DDR DDRH
+#define DEBUG_PORT PORTH
+// Fpga
+// #define DEBUG_PIN PORTH5
+// Ramps
+#define DEBUG_PIN PORTH1
 
 extern byte accelReportMode;
 extern int cmdPtrArrayLastIndex;
@@ -5,7 +25,10 @@ extern funcPtrs cmdArray[];
 
 inline byte processCommand() {
   if (cmdInBuffIndex > 0) {
-    if ((accelReportMode && cmd[0] != CMD_GET_ACCELS) || cmd[0] > cmdPtrArrayLastIndex) {
+    if ((accelReportMode
+              && cmd[0] != CMD_GET_ACCELS
+              && cmd[0] != CMD_BOARD_VERSION)
+          || cmd[0] > cmdPtrArrayLastIndex) {
       cmdInBuffIndex = 0;
       return 0;
     }
@@ -14,15 +37,21 @@ inline byte processCommand() {
   return 0;
 }
 
+inline void initDebug() {
+#ifdef DEBUG
+  DEBUG_DDR |= (1<<DEBUG_PIN);
+#endif
+}
+
 inline void debugOn() {
 #ifdef DEBUG
-  PORTH |= (1<<PORTH1);
+  DEBUG_PORT |= (1<<DEBUG_PIN);
 #endif
 }
 
 inline void debugOff() {
 #ifdef DEBUG
-  PORTH &= ~(1<<PORTH1);
+  DEBUG_PORT &= ~(1<<DEBUG_PIN);
 #endif
 }
 

@@ -1,5 +1,5 @@
 /*
-open-dobot firmware that controls Dobot FPGA.
+open-dobot firmware.
 
 Find driver and SDK at https://github.com/maxosprojects/open-dobot
 
@@ -10,8 +10,6 @@ Version: 0.5.0
 
 License: MIT
 */
-
-#define DEBUG
 
 #define F_CPU 16000000UL
 #define BAUD 115200
@@ -55,8 +53,12 @@ long motorPositionBase = 0;
 long motorPositionRear = 0;
 long motorPositionFore = 0;
 
-int accelRear;
-int accelFront;
+int accelRearX;
+int accelRearY;
+int accelRearZ;
+int accelFrontX;
+int accelFrontY;
+int accelFrontZ;
 byte accelReportMode = 0;
 
 void setup() {
@@ -186,7 +188,7 @@ byte cmdGetAccels() {
   if (!checkCrc(cmd, 1)) {
     return 2;
   }
-  writes22(cmd, &accelRear, &accelFront);
+  writes222222(cmd, &accelRearX, &accelRearY, &accelRearZ, &accelFrontX, &accelFrontY, &accelFrontZ);
   return 3;
 }
 
@@ -359,12 +361,6 @@ void serialInit(void) {
   UCSR1B = _BV(RXEN1) | _BV(TXEN1);   /* Enable RX and TX */
 }
 
-void initDebug() {
-#ifdef DEBUG
-  DDRH |= (1<<PORTH1);
-#endif
-}
-
 byte read2(byte data[]) {
   return serialReadNum(data, 2);
 }
@@ -396,11 +392,34 @@ byte writes22(byte data[], int* val1, int* val2) {
   return write22(data, (uint*)val1, (uint*)val2);
 }
 
+byte writes222222(byte data[], int* val1, int* val2, int* val3, int* val4, int* val5, int* val6) {
+  data[0] = (byte) (*val1 >> 8) & 0xff;
+  data[1] = (byte) *val1 & 0xff;
+  data[2] = (byte) (*val2 >> 8) & 0xff;
+  data[3] = (byte) *val2 & 0xff;
+  data[4] = (byte) (*val3 >> 8) & 0xff;
+  data[5] = (byte) *val3 & 0xff;
+  data[6] = (byte) (*val4 >> 8) & 0xff;
+  data[7] = (byte) *val4 & 0xff;
+  data[8] = (byte) (*val5 >> 8) & 0xff;
+  data[9] = (byte) *val5 & 0xff;
+  data[10] = (byte) (*val6 >> 8) & 0xff;
+  data[11] = (byte) *val6 & 0xff;
+  write12(data);
+}
+
 byte write4(byte data[]) {
   crcCcitt(data, 4, 1);
   data[4] = crc[0];
   data[5] = crc[1];
   serialWrite(data, 6);
+}
+
+byte write12(byte data[]) {
+  crcCcitt(data, 12, 1);
+  data[12] = crc[0];
+  data[13] = crc[1];
+  serialWrite(data, 14);
 }
 
 byte write4Continue(byte data[], ulong* val) {

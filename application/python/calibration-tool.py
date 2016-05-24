@@ -47,9 +47,15 @@ def toEndEffectorHeight(rear, fore):
 while True:
 	ret = driver.GetAccelerometers()
 	if ret[0]:
-		print("Rear arm: {0:10f} | Forearm: {1:10f} | End effector height: {2:10f} | Raw rear arm: {3:4d} | Raw forearm: {4:4d}".format(\
-			driver.accelToAngle(ret[1], offsets[0]), driver.accelToAngle(ret[2], offsets[1]),\
-			toEndEffectorHeight(driver.accelToRadians(ret[1], offsets[0]), driver.accelToRadians(ret[2], offsets[1])),\
-			ret[1], ret[2]))
+		if driver.isFpga():
+			print("Rear arm: {0:10f} | Forearm: {1:10f} | End effector height: {2:10f} | Raw rear arm: {3:4d} | Raw forearm: {4:4d}".format(\
+				driver.accelToAngle(ret[1], offsets[0]), driver.accelToAngle(ret[4], offsets[1]),\
+				toEndEffectorHeight(driver.accelToRadians(ret[1], offsets[0]), driver.accelToRadians(ret[4], offsets[1])),\
+				ret[1], ret[4]))
+		else:
+			print("Rear arm: {0:5f} | Forearm: {1:5f} | End effector height: {2:6f} | Raw rear arm: {3:4d} {4:4d} {5:4d} | Raw forearm: {6:4d} {7:4d} {8:4d}".format(\
+				driver.accel3DXToAngle(ret[1], ret[2], ret[3]), driver.accel3DXToAngle(ret[4], ret[5], ret[6]),\
+				toEndEffectorHeight(driver.accel3DXToRadians(ret[1], ret[2], ret[3]), driver.accel3DXToRadians(ret[4], ret[5], ret[6])),\
+				ret[1], ret[2], ret[3], ret[4], ret[5], ret[6]))
 	else:
 		print('Error occurred reading data')
