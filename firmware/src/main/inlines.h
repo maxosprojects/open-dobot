@@ -11,7 +11,7 @@ Version: 1.2.0
 License: MIT
 */
 
-#define DEBUG ENABLED
+// #define DEBUG ENABLED
 #define DEBUG_DDR DDRH
 #define DEBUG_PORT PORTH
 // Fpga

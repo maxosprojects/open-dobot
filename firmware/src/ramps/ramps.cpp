@@ -53,7 +53,7 @@ byte cmdBoardVersion() {
   return 3;
 }
 
-void accelRead(byte pin, int *x, int *y, int *z) {
+void accelRead(byte unit, int *x, int *y, int *z) {
   long resultX = 0;
   long resultY = 0;
   long resultZ = 0;
@@ -61,7 +61,7 @@ void accelRead(byte pin, int *x, int *y, int *z) {
   byte i = 20;
 
   while (i--) {
-    mpu6050_getRawAccels(&ax, &ay, &az);
+    mpu6050_getRawAccels(unit, &ax, &ay, &az);
     resultX += ax;
     resultY += ay;
     resultZ += az;
@@ -73,7 +73,9 @@ void accelRead(byte pin, int *x, int *y, int *z) {
 
 void switchToAccelReportMode() {
   while (1) {
-    accelRead(0, &accelRearX, &accelRearY, &accelRearZ);
+    accelRead(MPU6050_ADDR0, &accelRearX, &accelRearY, &accelRearZ);
+    processSerialBuffer();
+    accelRead(MPU6050_ADDR1, &accelFrontX, &accelFrontY, &accelFrontZ);
     processSerialBuffer();
   }
 }
@@ -82,16 +84,28 @@ void setupBoard() {
   // Enable internal pullup on accelerometer reporting mode pin.
   ACCEL_SWITCH_PORT |= (1<<ACCEL_SWITCH_PIN);
 
-  //init mpu6050
-  mpu6050_init();
-  _delay_ms(50);
+  // The following initializes I2C and MPU-6050 units.
+  // The approach seems to be working reliably.
+  byte i = 200;
+  while (i--) {
+    mpu6050_init(MPU6050_ADDR0);
+    _delay_ms(50);
+    mpu6050_init(MPU6050_ADDR1);
+    _delay_ms(50);
+    if (mpu6050_testConnection(MPU6050_ADDR0) && mpu6050_testConnection(MPU6050_ADDR1)) {
+      break;
+    } else {
+      mpu6050_deinit();
+    }
+  }
 
   if (! (ACCEL_SWITCH_PORTIN & (1<<ACCEL_SWITCH_PIN))) {
     accelReportMode = 1;
     switchToAccelReportMode();
   }
 
-  // accelRead(0, &accelRearX, &accelRearY, &accelRearZ);
+  accelRead(MPU6050_ADDR0, &accelRearX, &accelRearY, &accelRearZ);
+  accelRead(MPU6050_ADDR1, &accelFrontX, &accelFrontY, &accelFrontZ);
 
   X_STEP_DDR |= (1<< X_STEP_PIN);
   Y_STEP_DDR |= (1<< Y_STEP_PIN);

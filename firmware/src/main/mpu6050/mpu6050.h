@@ -6,6 +6,10 @@ copyright (c) Davide Gironi, 2012
 Released under GPLv3.
 Please refer to LICENSE file for licensing information.
 
+Updates: maxosprojects (May 24 2016)
+Changed functions to be able to address two units on one I2C bus.
+Implemented in a dirty way just to get it working with MPU6050_GETATTITUDE == 0
+
 References:
   - most of the code is a port of the arduino mpu6050 library by Jeff Rowberg
     https://github.com/jrowberg/i2cdevlib
@@ -20,12 +24,15 @@ References:
 #include <avr/io.h>
 #include "mpu6050registers.h"
 
+typedef unsigned char byte;
+
 //i2c settings
 #define MPU6050_I2CFLEURYPATH "i2cmaster.h" //define the path to i2c fleury lib
 #define MPU6050_I2CINIT 1 //init i2c
 
 //definitions
-#define MPU6050_ADDR (0x68 <<1) //device address - 0x68 pin low (GND), 0x69 pin high (VCC)
+#define MPU6050_ADDR0 (0x68 << 1) //device address - 0x68 pin low (GND), 0x69 pin high (VCC)
+#define MPU6050_ADDR1 (0x69 << 1) //device address - 0x68 pin low (GND), 0x69 pin high (VCC)
 
 //enable the getattitude functions
 //because we do not have a magnetometer, we have to start the chip always in the same position
@@ -111,26 +118,27 @@ extern volatile uint8_t mpu6050_mpuInterrupt;
 #endif
 
 //functions
-extern void mpu6050_init();
-extern uint8_t mpu6050_testConnection();
+extern void mpu6050_init(byte unit);
+extern uint8_t mpu6050_testConnection(byte unit);
+extern void mpu6050_deinit();
 
 #if MPU6050_GETATTITUDE == 0
-extern void mpu6050_getRawData(int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
-extern void mpu6050_getRawAccels(int16_t* ax, int16_t* ay, int16_t* az);
-extern void mpu6050_getConvData(double* axg, double* ayg, double* azg, double* gxds, double* gyds, double* gzds);
+extern void mpu6050_getRawData(byte unit, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
+extern void mpu6050_getRawAccels(byte unit, int16_t* ax, int16_t* ay, int16_t* az);
+extern void mpu6050_getConvData(byte unit, double* axg, double* ayg, double* azg, double* gxds, double* gyds, double* gzds);
 #endif
 
-extern void mpu6050_setSleepDisabled();
-extern void mpu6050_setSleepEnabled();
+extern void mpu6050_setSleepDisabled(byte unit);
+extern void mpu6050_setSleepEnabled(byte unit);
 
-extern int8_t mpu6050_readBytes(uint8_t regAddr, uint8_t length, uint8_t *data);
-extern int8_t mpu6050_readByte(uint8_t regAddr, uint8_t *data);
-extern void mpu6050_writeBytes(uint8_t regAddr, uint8_t length, uint8_t* data);
-extern void mpu6050_writeByte(uint8_t regAddr, uint8_t data);
-extern int8_t mpu6050_readBits(uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t *data);
-extern int8_t mpu6050_readBit(uint8_t regAddr, uint8_t bitNum, uint8_t *data);
-extern void mpu6050_writeBits(uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data);
-extern void mpu6050_writeBit(uint8_t regAddr, uint8_t bitNum, uint8_t data);
+extern int8_t mpu6050_readBytes(byte unit, uint8_t regAddr, uint8_t length, uint8_t *data);
+extern int8_t mpu6050_readByte(byte unit, uint8_t regAddr, uint8_t *data);
+extern void mpu6050_writeBytes(byte unit, uint8_t regAddr, uint8_t length, uint8_t* data);
+extern void mpu6050_writeByte(byte unit, uint8_t regAddr, uint8_t data);
+extern int8_t mpu6050_readBits(byte unit, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t *data);
+extern int8_t mpu6050_readBit(byte unit, uint8_t regAddr, uint8_t bitNum, uint8_t *data);
+extern void mpu6050_writeBits(byte unit, uint8_t regAddr, uint8_t bitStart, uint8_t length, uint8_t data);
+extern void mpu6050_writeBit(byte unit, uint8_t regAddr, uint8_t bitNum, uint8_t data);
 
 #if MPU6050_GETATTITUDE == 1
 extern void mpu6050_updateQuaternion();
@@ -139,12 +147,12 @@ extern void mpu6050_getRollPitchYaw(double *pitch, double *roll, double *yaw);
 #endif
 
 #if MPU6050_GETATTITUDE == 2
-extern void mpu6050_writeWords(uint8_t regAddr, uint8_t length, uint16_t* data);
-extern void mpu6050_setMemoryBank(uint8_t bank, uint8_t prefetchEnabled, uint8_t userBank);
-extern void mpu6050_setMemoryStartAddress(uint8_t address);
-extern void mpu6050_readMemoryBlock(uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address);
-extern uint8_t mpu6050_writeMemoryBlock(const uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address, uint8_t verify, uint8_t useProgMem);
-extern uint8_t mpu6050_writeDMPConfigurationSet(const uint8_t *data, uint16_t dataSize, uint8_t useProgMem);
+extern void mpu6050_writeWords(byte unit, uint8_t regAddr, uint8_t length, uint16_t* data);
+extern void mpu6050_setMemoryBank(byte unit, uint8_t bank, uint8_t prefetchEnabled, uint8_t userBank);
+extern void mpu6050_setMemoryStartAddress(byte unit, uint8_t address);
+extern void mpu6050_readMemoryBlock(byte unit, uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address);
+extern uint8_t mpu6050_writeMemoryBlock(byte unit, const uint8_t *data, uint16_t dataSize, uint8_t bank, uint8_t address, uint8_t verify, uint8_t useProgMem);
+extern uint8_t mpu6050_writeDMPConfigurationSet(byte unit, const uint8_t *data, uint16_t dataSize, uint8_t useProgMem);
 extern uint16_t mpu6050_getFIFOCount();
 extern void mpu6050_getFIFOBytes(uint8_t *data, uint8_t length);
 extern uint8_t mpu6050_getIntStatus();

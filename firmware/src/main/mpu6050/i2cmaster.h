@@ -101,6 +101,7 @@
  */
 extern void i2c_init(void);
 
+extern void i2c_deinit(void);
 
 /** 
  @brief Terminates the data transfer and releases the I2C bus 
