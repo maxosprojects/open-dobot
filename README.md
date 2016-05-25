@@ -6,7 +6,7 @@
    1. [Protocol](#protocol)
    2. [The "Arduino-based" joke](#arduino-joke)
 3. [Features implemented so far](#features-implemented-so-far)
-4. [Planned features](http://open-dobot.no-ip.org)
+4. [Planned features](http://open-dobot.boards.net)
 5. [Prerequisites](#prerequisites)
 6. [Disclaimer](#disclaimer)
 7. [Installation](#installation)
@@ -110,7 +110,7 @@ In the same folder you may find some examples that use the driver directly, SDK 
 
 Have fun!
 
-PS: Don't forget to leave comments, suggestions, etc., and check updates on the [forum](http://open-dobot.no-ip.org).
+PS: Don't forget to leave comments, suggestions, etc., and check updates on the [forum](http://open-dobot.boards.net).
 
 ---
 
@@ -133,7 +133,7 @@ Don't mind the soldering, it may not be required at all.~~
 ### Firmware
 1. Design:
     - [Protocol](https://github.com/maxosprojects/open-dobot/wiki/Protocol-Design)
-    - Firmware (follow up on [wiki](https://github.com/maxosprojects/open-dobot/wiki) and [forum](http://open-dobot.no-ip.org))
+    - Firmware (follow up on [wiki](https://github.com/maxosprojects/open-dobot/wiki) and [forum](http://open-dobot.boards.net))
 2. Implementation
 
 ### Application software
