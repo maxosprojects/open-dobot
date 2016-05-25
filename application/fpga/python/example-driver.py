@@ -61,9 +61,7 @@ for i in range(20):
 	ret = (0, 0)
 	while not ret[1]:
 		ret = driver.Steps(steps1, steps2, steps3, 1, 0, 1, gripper, toolRotation)
-	if not ret[1]:
-		errors += 1
-		print('Error', errors)
+
 time.sleep(6)
 print(27*20, 3*20, 14*20)
 print(driver.GetCounters())
