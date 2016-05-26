@@ -30,7 +30,98 @@ volatile int ticksLeftX;
 volatile int ticksLeftY;
 volatile int ticksLeftZ;
 
+
 SwitchPort calibrationPins[] = {
+  {
+    // D16 - reference 0
+    &PINH,
+    PH1,
+    &DDRH
+  },
+  {
+    // D17 - reference 1
+    &PINH,
+    PH0,
+    &DDRH
+  },
+  {
+    // D25 - reference 2
+    &PINA,
+    PA3,
+    &DDRA
+  },
+  {
+    // D27 - reference 3
+    &PINA,
+    PA5,
+    &DDRA
+  },
+  {
+    // D29 - reference 4
+    &PINA,
+    PA7,
+    &DDRA
+  },
+  {
+    // D31 - reference 5
+    &PINC,
+    PC6,
+    &DDRC
+  },
+  {
+    // D33 - reference 6
+    &PINC,
+    PC4,
+    &DDRC
+  },
+  {
+    // D35 - reference 7
+    &PINC,
+    PC2,
+    &DDRC
+  },
+  {
+    // D37 - reference 8
+    &PINC,
+    PC0,
+    &DDRC
+  },
+  {
+    // D39 - reference 9
+    &PING,
+    PG2,
+    &DDRG
+  },
+  {
+    // D41 - reference 10
+    &PING,
+    PG0,
+    &DDRG
+  },
+  {
+    // D43 - reference 11
+    &PINL,
+    PL6,
+    &DDRL
+  },
+  {
+    // D45 - reference 12
+    &PINL,
+    PL4,
+    &DDRL
+  },
+  {
+    // D47 - reference 13
+    &PINL,
+    PL2,
+    &DDRL
+  },
+  {
+    // D32 - reference 14
+    &PINC,
+    PC5,
+    &DDRC
+  }
 };
 
 byte calibrationPinsNumber() {
@@ -86,7 +177,7 @@ void setupBoard() {
 
   // The following initializes I2C and MPU-6050 units.
   // The approach seems to be working reliably.
-  byte i = 200;
+  byte i = 20;
   while (i--) {
     mpu6050_init(MPU6050_ADDR0);
     _delay_ms(50);
@@ -152,6 +243,37 @@ void setupBoard() {
   sei();
 }
 
+inline void move(Command* command) {
+  // Set current ticks. The rest is taken care of by TIMER5_COMPA_vect.
+  ticksX = (uint) command->j1;
+  ticksY = (uint) command->j2;
+  ticksZ = (uint) command->j3;
+  if (ticksX == 0) {
+    stepsX = 0;
+  } else {
+    X_DIR_PORT &= ~(1 << X_DIR_PIN);
+    X_DIR_PORT |= ((command->control & 0x01) << X_DIR_PIN);
+    ticksLeftX = ticksX - ISR_DELAY;
+    stepsX = STEPS_COEFF / ticksX;
+  }
+  if (ticksY == 0) {
+    stepsY = 0;
+  } else {
+    Y_DIR_PORT &= ~(1 << Y_DIR_PIN);
+    Y_DIR_PORT |= (((command->control >> 1) & 0x01) << Y_DIR_PIN);
+    ticksLeftY = ticksY - ISR_DELAY;
+    stepsY = STEPS_COEFF / ticksY;
+  }
+  if (ticksZ == 0) {
+    stepsZ = 1;
+  } else {
+    Z_DIR_PORT &= ~(1 << Z_DIR_PIN);
+    Z_DIR_PORT |= (((command->control >> 2) & 0x01) << Z_DIR_PIN);
+    ticksLeftZ = ticksZ - ISR_DELAY;
+    stepsZ = STEPS_COEFF / ticksZ;
+  }
+}
+
 // Timer1 compare match Interrupt Service Routine.
 // Executes commands at 50Hz.
 ISR(TIMER1_COMPA_vect)
@@ -164,17 +286,17 @@ ISR(TIMER1_COMPA_vect)
   // Calibration routine.
   if (calibrator.isRunning()) {
     if (calibrator.isHit()) {
-      if (calibrator.isBacking()) {
-        // writeSpi(calibrator.getBackoffCommand());
-      } else {
+      if (!calibrator.isBacking()) {
         calibrator.startBacking();
-        // writeSpi(calibrator.getBackoffCommand());
       }
+      move(calibrator.getBackoffCommand());
     } else if (calibrator.isBacking()) {
       calibrator.stop();
-      // writeSpiRest();
+      stepsX = 0;
+      stepsY = 0;
+      stepsZ = 0;
     } else {
-      // writeSpi(calibrator.getForwardCommand());
+      move(calibrator.getForwardCommand());
     }
   // If nothing left in the queue then send STOP.
   } else if (cmdQueue.isEmpty()) {
@@ -189,34 +311,7 @@ ISR(TIMER1_COMPA_vect)
       // Remove the command from the queue.
       cmdQueue.popTail();
       // Execute.
-      // Set current ticks. The rest is taken care of by TIMER5_COMPA_vect.
-      ticksX = (uint) command->j1;
-      ticksY = (uint) command->j2;
-      ticksZ = (uint) command->j3;
-      if (ticksX == 0) {
-        stepsX = 0;
-      } else {
-        X_DIR_PORT &= ~(1 << X_DIR_PIN);
-        X_DIR_PORT |= ((command->control & 0x01) << X_DIR_PIN);
-        ticksLeftX = ticksX - ISR_DELAY;
-        stepsX = STEPS_COEFF / ticksX;
-      }
-      if (ticksY == 0) {
-        stepsY = 0;
-      } else {
-        Y_DIR_PORT &= ~(1 << Y_DIR_PIN);
-        Y_DIR_PORT |= (((command->control >> 1) & 0x01) << Y_DIR_PIN);
-        ticksLeftY = ticksY - ISR_DELAY;
-        stepsY = STEPS_COEFF / ticksY;
-      }
-      if (ticksZ == 0) {
-        stepsZ = 1;
-      } else {
-        Z_DIR_PORT &= ~(1 << Z_DIR_PIN);
-        Z_DIR_PORT |= (((command->control >> 2) & 0x01) << Z_DIR_PIN);
-        ticksLeftZ = ticksZ - ISR_DELAY;
-        stepsZ = STEPS_COEFF / ticksZ;
-      }
+      move(command);
     }
   }
   executed = 1;
@@ -268,10 +363,9 @@ int main() {
   while (1) {
     if (executed) {
       executed = 0;
-      // After a command has been sent to FPGA or directly executed peek at the
-      // queue to see if there is another non-movement command is waiting next
-      // and execute it too. Do until a movement command is next or no commands
-      // left in the queue.
+      // After 50Hz has been executed peek at the queue to see if there is another
+      // non-movement command is waiting next and execute it. Do until a
+      // movement command is next or no commands left in the queue.
       while (!cmdQueue.isEmpty()) {
         Command* command = cmdQueue.peekTail();
         if (command->type == Move) {
