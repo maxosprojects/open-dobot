@@ -1,4 +1,4 @@
-Check out the official [open-dobot forum](http://open-dobot.no-ip.org)
+# New [open-dobot forum](http://open-dobot.boards.net)
 
 # Table of Contents
 1. [What is open-dobot](#what-is-open-dobot)
@@ -6,7 +6,7 @@ Check out the official [open-dobot forum](http://open-dobot.no-ip.org)
    1. [Protocol](#protocol)
    2. [The "Arduino-based" joke](#arduino-joke)
 3. [Features implemented so far](#features-implemented-so-far)
-4. [Planned features](http://open-dobot.no-ip.org)
+4. [Planned features](http://open-dobot.boards.net)
 5. [Prerequisites](#prerequisites)
 6. [Disclaimer](#disclaimer)
 7. [Installation](#installation)
@@ -80,8 +80,6 @@ The information provided here is a collective effort of enthusiasts who wanted t
 ### Python
 You will need Python 2.7 or Python 3.x. Download [here](https://www.python.org) and install.
 
-open-dobot 1.0 supports only Python 2.7, however, current ```master``` branch has support for Python 2.7 and 3.x and upcoming open-dobot 1.1 will have that change.
-
 You will also need ```pyserial``` module.
 
 If pyserial is not installed (exceptions are thrown when executing examples referring to not being able to find ```serial``` module) install it using ```pip``` (```pip``` should be installed with Python in your system):
@@ -112,7 +110,7 @@ In the same folder you may find some examples that use the driver directly, SDK 
 
 Have fun!
 
-PS: Don't forget to leave comments, suggestions, etc., and check updates on the [forum](http://open-dobot.no-ip.org).
+PS: Don't forget to leave comments, suggestions, etc., and check updates on the [forum](http://open-dobot.boards.net).
 
 ---
 
@@ -135,7 +133,7 @@ Don't mind the soldering, it may not be required at all.~~
 ### Firmware
 1. Design:
     - [Protocol](https://github.com/maxosprojects/open-dobot/wiki/Protocol-Design)
-    - Firmware (follow up on [wiki](https://github.com/maxosprojects/open-dobot/wiki) and [forum](http://open-dobot.no-ip.org))
+    - Firmware (follow up on [wiki](https://github.com/maxosprojects/open-dobot/wiki) and [forum](http://open-dobot.boards.net))
 2. Implementation
 
 ### Application software

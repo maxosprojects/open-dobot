@@ -630,3 +630,6 @@ class serial_aggregator:
 	def send(self):
 		self._ser.write(self._buf)
 		self._buf = bytearray()
+
+	def close(self):
+		self._ser.close()
