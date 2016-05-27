@@ -10,9 +10,9 @@ Use this tool to find offsets for your accelerometers:
 2. Remove accelerometers from the arm and put them on a flat surface that has no inclination
 3. Connect USB cable
 4. Enable accelerometers reporting mode:
-4.1. Press and hold the "Sensor Calibration" button
+4.1. Press and hold the "Sensor Calibration" button on FPGA version or ground pin D23 on AUX-4 on RAMPS version
 4.2. Press and release the "Reset" button
-4.3. Start this tool (still holding "Sensor Calibration" button)
+4.3. Start this tool (still holding "Sensor Calibration" button on FPGA version or keeping pin D23 grounded on RAMPS)
 4.4. Wait for the accelerometer data to start flowing on your console/whatever_you_use_to_start_this_tool
 4.5. Release the "Sensor Calibration" button
 5. Gently push down the accelerometers so that they are evenly on the surface. Don't touch any contacts/leads.

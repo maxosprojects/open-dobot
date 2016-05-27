@@ -85,6 +85,17 @@ extern SwitchPort calibrationPins[];
 
 extern byte calibrationPinsNumber();
 
+extern long motorPositionBase;
+extern long motorPositionRear;
+extern long motorPositionFore;
+
+extern int accelRearX;
+extern int accelRearY;
+extern int accelRearZ;
+extern int accelFrontX;
+extern int accelFrontY;
+extern int accelFrontZ;
+
 void setup();
 void setupBoard();
 void processSerialBuffer();

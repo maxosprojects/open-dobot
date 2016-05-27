@@ -144,6 +144,30 @@ byte cmdBoardVersion() {
   return 3;
 }
 
+void laserOn() {
+  LASER_PORT |= 1<<LASER_PIN;
+}
+
+void laserOff() {
+  LASER_PORT &= ~(1<<LASER_PIN);
+}
+
+void pumpOn() {
+  PUMP_PORT |= 1<<PUMP_PIN;
+}
+
+void pumpOff() {
+  PUMP_PORT &= ~(1<<PUMP_PIN);
+}
+
+void valveOn() {
+  VALVE_PORT |= 1<<VALVE_PIN;
+}
+
+void valveOff() {
+  VALVE_PORT &= ~(1<<VALVE_PIN);
+}
+
 void accelRead(byte unit, int *x, int *y, int *z) {
   long resultX = 0;
   long resultY = 0;
@@ -214,6 +238,10 @@ void setupBoard() {
   X_ENABLE_PORT &= ~(1<< X_ENABLE_PIN);
   Y_ENABLE_PORT &= ~(1<< Y_ENABLE_PIN);
   Z_ENABLE_PORT &= ~(1<< Z_ENABLE_PIN);
+
+  LASER_DDR |= (1<< LASER_PIN);
+  PUMP_DDR |= (1<< PUMP_PIN);
+  VALVE_DDR |= (1<< VALVE_PIN);
 
   /**
    * Set up TIMER1_COMPA_vect ISR to execute commands.

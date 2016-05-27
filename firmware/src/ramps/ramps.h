@@ -62,6 +62,18 @@ RAMPS version routines.
 #define ACCEL_SWITCH_PORTIN PINA
 #define ACCEL_SWITCH_PIN PORTA1
 
+#define LASER_PIN PORTB4
+#define LASER_PORT PORTB
+#define LASER_DDR DDRB
+
+#define PUMP_PIN PORTH5
+#define PUMP_PORT PORTH
+#define PUMP_DDR DDRH
+
+#define VALVE_PIN PORTH6
+#define VALVE_PORT PORTH
+#define VALVE_DDR DDRH
+
 // At 50kHz how many ticks pass between TIMER5_COMPA_vect ISR calls.
 #define TICKS_PER_CALL 40
 // Coefficient that is used in DobotDriver to calculate stepping
@@ -73,12 +85,3 @@ RAMPS version routines.
 
 extern CommandQueue cmdQueue;
 extern Calibrator calibrator;
-extern int accelRearX;
-extern int accelRearY;
-extern int accelRearZ;
-extern int accelFrontX;
-extern int accelFrontY;
-extern int accelFrontZ;
-extern long motorPositionBase;
-extern long motorPositionRear;
-extern long motorPositionFore;

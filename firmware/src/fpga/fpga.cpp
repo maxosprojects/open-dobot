@@ -299,6 +299,30 @@ byte cmdBoardVersion() {
   return 3;
 }
 
+void laserOn() {
+  PORTB |= 1<<PB6;
+}
+
+void laserOff() {
+  PORTB &= ~(1<<PB6);
+}
+
+void pumpOn() {
+  PORTG |= 1<<PG0;
+}
+
+void pumpOff() {
+  PORTG &= ~(1<<PG0);
+}
+
+void valveOn() {
+  PORTL |= 1<<PL6;
+}
+
+void valveOff() {
+  PORTL &= ~(1<<PL6);
+}
+
 void setupBoard() {
   //---=== Power-on sequence ===---
   // 1. FPGA_ENABLE_PIN = LOW, FPGA_COMMAND_PIN = LOW

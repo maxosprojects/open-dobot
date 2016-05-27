@@ -299,30 +299,6 @@ byte cmdValveOn() {
   return 3;
 }
 
-void laserOn() {
-  PORTB |= 1<<PB6;
-}
-
-void laserOff() {
-  PORTB &= ~(1<<PB6);
-}
-
-void pumpOn() {
-  PORTG |= 1<<PG0;
-}
-
-void pumpOff() {
-  PORTG &= ~(1<<PG0);
-}
-
-void valveOn() {
-  PORTL |= 1<<PL6;
-}
-
-void valveOff() {
-  PORTL &= ~(1<<PL6);
-}
-
 // CMD: Executes deferred commands in the queue.
 byte cmdExecQueue() {
   // Check if not enough bytes yet.

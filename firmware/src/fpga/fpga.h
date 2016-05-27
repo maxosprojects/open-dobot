@@ -41,16 +41,6 @@ extern uint currToolRotation;
 
 extern byte prevMotorDirections;
 extern byte currMotorDirections;
-extern long motorPositionBase;
-extern long motorPositionRear;
-extern long motorPositionFore;
-
-extern int accelRearX;
-extern int accelRearY;
-extern int accelRearZ;
-extern int accelFrontX;
-extern int accelFrontY;
-extern int accelFrontZ;
 
 extern CommandQueue cmdQueue;
 extern Calibrator calibrator;
