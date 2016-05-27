@@ -41,14 +41,6 @@ while True:
 gripper = 480
 toolRotation = 0
 
-driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(0), driver.stepsToCmdVal(14), 1, 1, 0, gripper, toolRotation)
-driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(1), driver.stepsToCmdVal(14), 1, 1, 0, gripper, toolRotation)
-driver.Steps(driver.stepsToCmdVal(62), driver.stepsToCmdVal(3), driver.stepsToCmdVal(15), 1, 1, 0, gripper, toolRotation)
-time.sleep(2)
-print(driver.GetCounters())
-
-# exit(0)
-
 print('Accelerometer data returned', driver.GetAccelerometers())
 
 steps1 = driver.stepsToCmdVal(27)
@@ -56,16 +48,14 @@ steps2 = driver.stepsToCmdVal(3)
 steps3 = driver.stepsToCmdVal(14)
 driver.SetCounters(0, 0, 0)
 
+print("Executing 20 commands with steps 27, -3, -14. Expecting GetCounters() to return:", 27*20, -3*20, -14*20)
 errors = 0
 for i in range(20):
 	ret = (0, 0)
 	while not ret[1]:
 		ret = driver.Steps(steps1, steps2, steps3, 1, 0, 1, gripper, toolRotation)
-	if not ret[1]:
-		errors += 1
-		print('Error', errors)
-time.sleep(6)
-print(27*20, 3*20, 14*20)
+
+time.sleep(3)
 print(driver.GetCounters())
 
 # exit(0)

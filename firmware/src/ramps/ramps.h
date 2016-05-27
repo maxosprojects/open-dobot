@@ -79,3 +79,6 @@ extern int accelRearZ;
 extern int accelFrontX;
 extern int accelFrontY;
 extern int accelFrontZ;
+extern long motorPositionBase;
+extern long motorPositionRear;
+extern long motorPositionFore;

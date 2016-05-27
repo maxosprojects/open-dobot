@@ -244,33 +244,51 @@ void setupBoard() {
 }
 
 inline void move(Command* command) {
+  byte mask;
+
   // Set current ticks. The rest is taken care of by TIMER5_COMPA_vect.
   ticksX = (uint) command->j1;
   ticksY = (uint) command->j2;
   ticksZ = (uint) command->j3;
+
   if (ticksX == 0) {
     stepsX = 0;
   } else {
-    X_DIR_PORT &= ~(1 << X_DIR_PIN);
-    X_DIR_PORT |= ((command->control & 0x01) << X_DIR_PIN);
+    mask = ((command->control & 0x01) << X_DIR_PIN);
+    X_DIR_PORT = (X_DIR_PORT & ~(1 << X_DIR_PIN)) | mask;
     ticksLeftX = ticksX - ISR_DELAY;
     stepsX = STEPS_COEFF / ticksX;
+    if (mask) {
+      motorPositionBase += stepsX;
+    } else {
+      motorPositionBase -= stepsX;
+    }
   }
   if (ticksY == 0) {
     stepsY = 0;
   } else {
-    Y_DIR_PORT &= ~(1 << Y_DIR_PIN);
-    Y_DIR_PORT |= (((command->control >> 1) & 0x01) << Y_DIR_PIN);
+    mask = (((command->control >> 1) & 0x01) << Y_DIR_PIN);
+    Y_DIR_PORT = (Y_DIR_PORT & ~(1 << Y_DIR_PIN)) | mask;
     ticksLeftY = ticksY - ISR_DELAY;
     stepsY = STEPS_COEFF / ticksY;
+    if (mask) {
+      motorPositionRear += stepsY;
+    } else {
+      motorPositionRear -= stepsY;
+    }
   }
   if (ticksZ == 0) {
-    stepsZ = 1;
+    stepsZ = 0;
   } else {
-    Z_DIR_PORT &= ~(1 << Z_DIR_PIN);
-    Z_DIR_PORT |= (((command->control >> 2) & 0x01) << Z_DIR_PIN);
+    mask = (((command->control >> 2) & 0x01) << Z_DIR_PIN);
+    Z_DIR_PORT = (Z_DIR_PORT & ~(1 << Z_DIR_PIN)) | mask;
     ticksLeftZ = ticksZ - ISR_DELAY;
     stepsZ = STEPS_COEFF / ticksZ;
+    if (mask) {
+      motorPositionFore -= stepsZ;
+    } else {
+      motorPositionFore += stepsZ;
+    }
   }
 }
 
