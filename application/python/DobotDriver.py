@@ -441,7 +441,7 @@ class DobotDriver:
 		@param servoGrab - servoGrab position (gripper): 0x00d0-0x01e0 (or 208-480 decimal)
 		@param servoRot - servoRot position (tool rotation): 0x0000-0x0400 (or 0-1024 decimal)
 		@param deferred - defer execution of this command and all commands issued after this until
-						the "ExecQueue" command is issued.
+						the "ExecQueue" command is issued. Currently ignored.
 		@return Returns a tuple where the first element tells whether the command has been successfully
 		received (1 - received, 0 - timed out), and the second element tells whether the command was added
 		to the controller's command queue (1 - added, 0 - not added, as the queue was full).
@@ -458,6 +458,13 @@ class DobotDriver:
 			servoRot = 1024
 		elif servoRot < 0:
 			servoRot = 0
+
+		if self._ramps:
+			servoRot *= 2;
+			servoRot += 2000;
+			servoGrab *= 2;
+			servoGrab += 2000;
+
 		result = self._write1444122read1(CMD_STEPS, j1, j2, j3, control, self.reverseBits16(servoGrab), self.reverseBits16(servoRot))
 		self._lock.release()
 		return result

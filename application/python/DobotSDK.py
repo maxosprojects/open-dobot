@@ -545,7 +545,7 @@ class Dobot:
 		in seconds and can be fractions of seconds.
 		The resolution of this command is up to 20ms.
 
-		In order to make the arm wait a number of commands are issued to do nothing. Each command takes 20ms
+		In order to make the arm wait a number of commands is issued to do nothing. Each command takes 20ms
 		to execute by the arm.
 		'''
 		iterations = int(waitTime * 50)

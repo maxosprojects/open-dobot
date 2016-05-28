@@ -50,7 +50,7 @@ typedef unsigned long ulong;
 typedef byte(*funcPtrs)(void);
 typedef void(*implFuncPtrs)(void);
 
-// DO NOT FORGET TO UPDATE implementationFunctions SIZE!
+// DO NOT FORGET TO UPDATE implementationFunctions SIZE if changing these!
 enum CommandType {
   Move = 0,
   LaserOn,

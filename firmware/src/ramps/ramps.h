@@ -74,6 +74,14 @@ RAMPS version routines.
 #define VALVE_PORT PORTH
 #define VALVE_DDR DDRH
 
+#define TOOL_ROT_PIN PORTH3
+#define TOOL_ROT_DDR DDRH
+#define TOOL_ROT_PWM OCR4A
+
+#define GRIPPER_PIN PORTE3
+#define GRIPPER_DDR DDRE
+#define GRIPPER_PWM OCR3A
+
 // At 50kHz how many ticks pass between TIMER5_COMPA_vect ISR calls.
 #define TICKS_PER_CALL 40
 // Coefficient that is used in DobotDriver to calculate stepping

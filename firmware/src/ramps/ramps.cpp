@@ -195,7 +195,62 @@ void switchToAccelReportMode() {
   }
 }
 
+inline void setupPwm() {
+  // Setup Gripper servo.
+  // Set scaler to 1/8 FCPU_FREQ.
+  TCCR3B |= (1<< CS31);
+  // Set mode 14 (ICR3 defines TOP).
+  TCCR3A |= (1<< WGM31);
+  TCCR3B |= (1<< WGM32) | (1<< WGM33);
+  // Set TOP to 50Hz at 1/8 FCPU_FREQ.
+  ICR3 = 40000;
+  // Fast PWM. Clear OCnA/OCnB/OCnC on compare match, clear OCnA/OCnB/OCnC at BOTTOM (inverting mode).
+  TCCR3A |= (1<< COM3A1);
+  // Set initial gripper state to 480 (480 * 2 + 2000).
+  GRIPPER_PWM = 2960;
+  // Enable pin.
+  GRIPPER_DDR |= (1<< GRIPPER_PIN);
+
+  // Setup ToolRotation servo.
+  // Set scaler to 1/8 FCPU_FREQ.
+  TCCR4B |= (1<< CS41);
+  // Set mode 14 (ICR3 defines TOP).
+  TCCR4A |= (1<< WGM41);
+  TCCR4B |= (1<< WGM42) | (1<< WGM43);
+  // Set TOP to 50Hz at 1/8 FCPU_FREQ.
+  ICR4 = 40000;
+  // Fast PWM. Clear OCnA/OCnB/OCnC on compare match, clear OCnA/OCnB/OCnC at BOTTOM (inverting mode).
+  TCCR4A |= (1<< COM4A1);
+  // Set initial tool state to 500 (500 * 2 + 2000).
+  TOOL_ROT_PWM = 3000;
+  // Enable pin.
+  TOOL_ROT_DDR |= (1<< TOOL_ROT_PIN);
+}
+
 void setupBoard() {
+  X_STEP_DDR |= (1<< X_STEP_PIN);
+  Y_STEP_DDR |= (1<< Y_STEP_PIN);
+  Z_STEP_DDR |= (1<< Z_STEP_PIN);
+
+  X_DIR_DDR |= (1<< X_DIR_PIN);
+  Y_DIR_DDR |= (1<< Y_DIR_PIN);
+  Z_DIR_DDR |= (1<< Z_DIR_PIN);
+
+  X_ENABLE_DDR |= (1<< X_ENABLE_PIN);
+  Y_ENABLE_DDR |= (1<< Y_ENABLE_PIN);
+  Z_ENABLE_DDR |= (1<< Z_ENABLE_PIN);
+
+  // Enable pin is negative, so 0 means motors are enabled.
+  X_ENABLE_PORT &= ~(1<< X_ENABLE_PIN);
+  Y_ENABLE_PORT &= ~(1<< Y_ENABLE_PIN);
+  Z_ENABLE_PORT &= ~(1<< Z_ENABLE_PIN);
+
+  LASER_DDR |= (1<< LASER_PIN);
+  PUMP_DDR |= (1<< PUMP_PIN);
+  VALVE_DDR |= (1<< VALVE_PIN);
+
+  setupPwm();
+
   // Enable internal pullup on accelerometer reporting mode pin.
   ACCEL_SWITCH_PORT |= (1<<ACCEL_SWITCH_PIN);
 
@@ -221,27 +276,6 @@ void setupBoard() {
 
   accelRead(MPU6050_ADDR0, &accelRearX, &accelRearY, &accelRearZ);
   accelRead(MPU6050_ADDR1, &accelFrontX, &accelFrontY, &accelFrontZ);
-
-  X_STEP_DDR |= (1<< X_STEP_PIN);
-  Y_STEP_DDR |= (1<< Y_STEP_PIN);
-  Z_STEP_DDR |= (1<< Z_STEP_PIN);
-
-  X_DIR_DDR |= (1<< X_DIR_PIN);
-  Y_DIR_DDR |= (1<< Y_DIR_PIN);
-  Z_DIR_DDR |= (1<< Z_DIR_PIN);
-
-  X_ENABLE_DDR |= (1<< X_ENABLE_PIN);
-  Y_ENABLE_DDR |= (1<< Y_ENABLE_PIN);
-  Z_ENABLE_DDR |= (1<< Z_ENABLE_PIN);
-
-  // Enable pin is negative, so 0 means motors are enabled.
-  X_ENABLE_PORT &= ~(1<< X_ENABLE_PIN);
-  Y_ENABLE_PORT &= ~(1<< Y_ENABLE_PIN);
-  Z_ENABLE_PORT &= ~(1<< Z_ENABLE_PIN);
-
-  LASER_DDR |= (1<< LASER_PIN);
-  PUMP_DDR |= (1<< PUMP_PIN);
-  VALVE_DDR |= (1<< VALVE_PIN);
 
   /**
    * Set up TIMER1_COMPA_vect ISR to execute commands.
@@ -318,6 +352,8 @@ inline void move(Command* command) {
       motorPositionFore += stepsZ;
     }
   }
+  GRIPPER_PWM = command->servoGrab;
+  TOOL_ROT_PWM = command->servoRot;
 }
 
 // Timer1 compare match Interrupt Service Routine.
