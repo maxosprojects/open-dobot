@@ -1,5 +1,7 @@
 # New [open-dobot forum](http://open-dobot.boards.net)
 
+# [RAMPS is back](https://github.com/maxosprojects/open-dobot/releases/tag/1.2.0) and is to stay!
+
 # Table of Contents
 1. [What is open-dobot](#what-is-open-dobot)
 2. [Why? ...or the original firmware problems](#why)
