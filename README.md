@@ -92,7 +92,7 @@ The information provided here is a collective effort of enthusiasts who wanted t
 
 # Installation
 
-For **RAMPS** wiring refer to [wiki page](https://github.com/maxosprojects/open-dobot/wiki/5.-RAMPS).
+For **RAMPS** wiring refer to [wiki](https://github.com/maxosprojects/open-dobot/wiki/).
 
 ### Python
 You will need Python 2.7 or Python 3.x. Download [here](https://www.python.org) and install.
@@ -110,7 +110,7 @@ On *nix you may need to do that with sudo (depends on how Python/pip was install
 ```sudo pip install pyserial```
 
 #### Permanent Device Name on Linux
-On Linux, you can use udev-rules to create a permanent device name for the dobot: [udev-rules](https://github.com/maxosprojects/open-dobot/wiki/Setting-up-udev-rules-for-a-consistent-device-name-on-Linux)
+On Linux, you can use udev-rules to create a permanent device name for the dobot: [udev-rules](https://github.com/maxosprojects/open-dobot/wiki/)
 
 ### Firmware
 Always prefer latest [Release](https://github.com/maxosprojects/open-dobot/releases) version, for everything - the compiled firmware, source code and examples. 
@@ -136,11 +136,11 @@ PS: Don't forget to leave comments, suggestions, etc., and check updates on the 
 
 As mentioned above, there are two options: use original FPGA board or replace it with **RAMPS**.
 
-For instructions on how to set up and wire RAMPS refer to [wiki page](https://github.com/maxosprojects/open-dobot/wiki/5.-RAMPS).
+For instructions on how to set up and wire RAMPS refer to [wiki](https://github.com/maxosprojects/open-dobot/wiki/).
 
 ### Firmware
 1. Design:
-    - [Protocol](https://github.com/maxosprojects/open-dobot/wiki/Protocol-Design)
+    - [Protocol](https://github.com/maxosprojects/open-dobot/wiki/)
     - Firmware (follow up on [wiki](https://github.com/maxosprojects/open-dobot/wiki) and [forum](http://open-dobot.boards.net))
 2. Implementation
 
