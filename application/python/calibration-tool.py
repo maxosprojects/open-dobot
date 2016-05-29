@@ -54,8 +54,8 @@ while True:
 				ret[1], ret[4]))
 		else:
 			print("Rear arm: {0:6.2f} | Forearm: {1:6.2f} | End effector height: {2:7.2f} | Raw rear arm: {3:6d} {4:6d} {5:6d} | Raw forearm: {6:6d} {7:6d} {8:6d}".format(\
-				driver.accel3DXToAngle(ret[1], ret[2], ret[3]), driver.accel3DXToAngle(ret[4], ret[5], ret[6]),\
-				toEndEffectorHeight(driver.accel3DXToRadians(ret[1], ret[2], ret[3]), driver.accel3DXToRadians(ret[4], ret[5], ret[6])),\
+				driver.accel3DXToAngle(ret[1], ret[2], ret[3]), -driver.accel3DXToAngle(ret[4], ret[5], ret[6]),\
+				toEndEffectorHeight(driver.accel3DXToRadians(ret[1], ret[2], ret[3]), -driver.accel3DXToRadians(ret[4], ret[5], ret[6])),\
 				ret[1], ret[2], ret[3], ret[4], ret[5], ret[6]))
 	else:
 		print('Error occurred reading data')

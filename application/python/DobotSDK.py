@@ -115,7 +115,7 @@ class Dobot:
 			foreAngle = self._driver.accelToRadians(accelForeX, accelOffsets[1])
 		else:
 			rearAngle = math.pi / 2.0 - self._driver.accel3DXToRadians(accelRearX, accelRearY, accelRearZ)
-			foreAngle = self._driver.accel3DXToRadians(accelForeX, accelForeY, accelForeZ)
+			foreAngle = -self._driver.accel3DXToRadians(accelForeX, accelForeY, accelForeZ)
 		self._baseSteps = long(0)
 		self._rearSteps = long((rearAngle / math.pi / 2.0) * rearArmActualStepsPerRevolution + 0.5)
 		self._foreSteps = long((foreAngle / math.pi / 2.0) * foreArmActualStepsPerRevolution + 0.5)
