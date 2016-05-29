@@ -23,7 +23,7 @@ Use this tool to find offsets for your accelerometers:
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 0.4.0
+Version: 1.2.2
 
 License: MIT
 """

@@ -9,7 +9,7 @@ Find firmware, driver and SDK at https://github.com/maxosprojects/open-dobot
 First Author: Mike Ferguson www.mikeahferguson.com 3/26/2016
 Additional Authors: maxosprojects
 
-Version 0.3.0
+Version 1.2.2
 
 License: MIT
 """

@@ -20,7 +20,7 @@ in move (with the "Laser Adjustment" button) it has to be re-initialized and SDK
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 0.5.0
+Version: 1.2.2
 
 License: MIT
 """

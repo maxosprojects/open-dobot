@@ -6,7 +6,7 @@ Find driver and SDK at https://github.com/maxosprojects/open-dobot
 Author: maxosprojects (March 18 2016)
 Additional Authors: <put your name here>
 
-Version: 1.2.0
+Version: 1.2.2
 
 License: MIT
 */
