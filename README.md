@@ -17,6 +17,14 @@
 8. [Installation](#installation)
 9. [Details](#details)
 
+# DISCLAIMER
+
+The information provided here is a collective effort of enthusiasts who wanted to make the Dobot arm useful for themselves and others. The instructions are provided without pursuing any personal or material benefit, AS IS and to the best of the knowledge of the people involved in this project as to not cause any damage or harm with hardware and software manipulations, but to only bring the arm to life, make it useful and reliable, squeezing out everything from every dollar that has been paid for the arm. With that said, following these instructions strictly or (especially) not strictly you take any risk and full responsibility for any damage or harm that it might lead to.
+
+THE AUTHORS OF THIS PROJECT ACCEPT ABSOLUTELY NO LIABILITY FOR ANY HARM OR LOSS RESULTING FROM ITS USE. IT IS EXTREMELY UNWISE TO RELY ON SOFTWARE ALONE FOR SAFETY. Any machinery capable of harming persons must have provisions for completely removing power from all motors, etc, before persons enter any danger area. All machinery must be designed to comply with local and national safety codes, and the authors of this software can not, and do not, take any responsibility for such compliance.
+
+---
+
 # What is open-dobot
 This project is intended as a completely open and free (MIT License) alternative to proprietary and limited (no features other than basic ones) original firmware for Dobot robotic arm (original Kickstarter campaign https://www.kickstarter.com/projects/dobot/dobot-robotic-arm-for-everyone-arduino-and-open-so/description).
 
@@ -82,11 +90,6 @@ Any platform where Python can run is supported. Tested on the following:
 You will only need:
 - [DobotTools](http://dobot.cc/download.php) or avrdude directly (included in Arduino IDE) to flash _open-dobot_ firmware
 - [Python](https://www.python.org) to run application software and examples (see [Installation](#installation))
-
----
-
-# Disclaimer
-The information provided here is a collective effort of enthusiasts who wanted to make the Dobot arm useful for themselves and others. The instructions are provided without pursuing any personal or material benefit, AS IS and to the best of the knowledge of the people involved in this project as to not cause any damage or harm with hardware and software manipulations, but to only bring the arm to life, make it useful and reliable, squeezing out everything from every dollar that has been paid for the arm. With that said, following these instructions strictly or (especially) not strictly you take any risk and full responsibility for any damage or harm that it might lead to.
 
 ---
 
