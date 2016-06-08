@@ -294,14 +294,14 @@ void setupBoard() {
    */
   // Configure Timer5 to CTC mode.
   TCCR5B |= (1 << WGM52);
-  // Start Timer4 at Fcpu/1 (16MHz)
+  // Start Timer5 at Fcpu/1 (16MHz)
   TCCR5B |= (1 << CS50);
   // Set compare match register on Timer1 to form 50kHz
   OCR5A = 320;
   // Enable timer compare interrupt (for stepping).
   TIMSK5 |= (1 << OCIE5A);
 
-  // Inable interrupts for to execute commands at 50Hz.
+  // Inable interrupts to execute timer ISRs.
   sei();
 }
 
