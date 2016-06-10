@@ -52,6 +52,8 @@ class DobotDriver:
 		self._crc = 0xffff
 		self.FPGA = 0
 		self.RAMPS = 1
+		self._toolRotation = 0
+		self._gripper = 480
 
 	def Open(self, timeout=0.025):
 		try:
@@ -71,7 +73,7 @@ class DobotDriver:
 			exit(1)
 
 		ret = (0, 0)
-		i = 100
+		i = 200
 		while not ret[0] and i > 0:
 			ret = self.BoardVersion()
 			i -= 1
@@ -362,7 +364,9 @@ class DobotDriver:
 		'''
 		if abs(steps) < 0.01:
 			return (self._stopSeq, 0, 0.0)
-		actualSteps = long(round(steps))
+		# "round" makes leftover negative in certain cases and causes backlash compensation to oscillate.
+		# actualSteps = long(round(steps))
+		actualSteps = long(steps)
 		if actualSteps == 0:
 			return (self._stopSeq, 0, steps)
 		val = long(self._stepCoeff / actualSteps)
@@ -464,6 +468,9 @@ class DobotDriver:
 			servoRot += 2000;
 			servoGrab *= 2;
 			servoGrab += 2000;
+
+		self._toolRotation = servoRot
+		self._gripper = servoGrab
 
 		result = self._write1444122read1(CMD_STEPS, j1, j2, j3, control, self.reverseBits16(servoGrab), self.reverseBits16(servoRot))
 		self._lock.release()
@@ -573,6 +580,22 @@ class DobotDriver:
 			result = self._write1read1(CMD_VALVE_ON, 0)
 		self._lock.release()
 		return result
+
+	def Wait(self, waitTime):
+		'''
+		Makes the arm wait in current position for the specified period of time. The wait period is specified
+		in seconds and can be fractions of seconds.
+		The resolution of this command is up to 20ms.
+
+		In order to make the arm wait a number of commands is issued to do nothing. Each command takes 20ms
+		to execute by the arm.
+		'''
+		iterations = int(waitTime * 50)
+		for i in range(iterations):
+			ret = (0, 0)
+			# Keep sending until buffered
+			while not ret[0] or not ret[1]:
+				ret = self.Steps(0, 0, 0, 0, 0, 0, self._gripper, self._toolRotation)
 
 	def BoardVersion(self):
 		'''

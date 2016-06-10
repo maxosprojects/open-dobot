@@ -256,7 +256,7 @@ void setupBoard() {
 
   // The following initializes I2C and MPU-6050 units.
   // The approach seems to be working reliably.
-  byte i = 20;
+  byte i = 5;
   while (i--) {
     mpu6050_init(MPU6050_ADDR0);
     _delay_ms(50);
