@@ -323,6 +323,11 @@ void valveOff() {
   PORTL &= ~(1<<PL6);
 }
 
+void updateAccels() {
+  // Do nothing. It is not possible to read original accelerometers on FPGA board after
+  // Arduino finished booting.
+}
+
 void setupBoard() {
   //---=== Power-on sequence ===---
   // 1. FPGA_ENABLE_PIN = LOW, FPGA_COMMAND_PIN = LOW
