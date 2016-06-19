@@ -93,6 +93,7 @@
 /** defines the data direction (writing to I2C device) in i2c_start(),i2c_rep_start() */
 #define I2C_WRITE   0
 
+typedef unsigned char byte;
 
 /**
  @brief initialize the I2C master interace. Need to be called only once 
@@ -154,26 +155,13 @@ extern unsigned char i2c_write(unsigned char data);
  @brief    read one byte from the I2C device, request more data from device 
  @return   byte read from I2C device
  */
-extern unsigned char i2c_readAck(void);
+extern unsigned char i2c_readAck(byte* dest);
 
 /**
  @brief    read one byte from the I2C device, read is followed by a stop condition 
  @return   byte read from I2C device
  */
-extern unsigned char i2c_readNak(void);
-
-/** 
- @brief    read one byte from the I2C device
- 
- Implemented as a macro, which calls either i2c_readAck or i2c_readNak
- 
- @param    ack 1 send ack, request more data from device<br>
-               0 send nak, read is followed by a stop condition 
- @return   byte read from I2C device
- */
-extern unsigned char i2c_read(unsigned char ack);
-#define i2c_read(ack)  (ack) ? i2c_readAck() : i2c_readNak(); 
-
+extern unsigned char i2c_readNak(byte* dest);
 
 /**@}*/
 #endif

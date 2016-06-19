@@ -58,10 +58,6 @@ RAMPS version routines.
 #define Z_ENABLE_PORT      PORTA
 #define Z_ENABLE_DDR       DDRA
 
-#define ACCEL_SWITCH_PIN PORTA1
-#define ACCEL_SWITCH_PORT PORTA
-#define ACCEL_SWITCH_PORTIN PINA
-
 #define LASER_PIN PORTB4
 #define LASER_PORT PORTB
 #define LASER_DDR DDRB

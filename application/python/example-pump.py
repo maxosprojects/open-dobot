@@ -4,7 +4,7 @@ Take an object using sucker pump and put it in a different place.
 
 '''
 
-from DobotSDK import Dobot
+from dobot import Dobot
 import time
 
 # dobot = Dobot('COM4', debug=True)
@@ -12,8 +12,9 @@ dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 
 # Enable calibration routine if you have a limit switch/photointerrupter installed on the arm.
 # See example-switch.py for details.
-# Move both arms to approximately 45 degrees.
-# dobot.moveWithSpeed(260.0, 0.0, 85, 700)
+# Take the tool to a safe height.
+
+# dobot.MoveWithSpeed(260.0, 0.0, 180, 700)
 # time.sleep(2)
 # dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 1, 5, 1, 0)
 

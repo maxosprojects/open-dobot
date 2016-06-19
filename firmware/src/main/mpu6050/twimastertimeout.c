@@ -206,18 +206,21 @@ unsigned char i2c_write( unsigned char data )
  
  Return:  byte read from I2C device
 *************************************************************************/
-unsigned char i2c_readAck(void)
+unsigned char i2c_readAck(byte* dest)
 {
 	uint32_t  i2c_timer = 0;
+	byte temp;
 
 	TWCR = (1<<TWINT) | (1<<TWEN) | (1<<TWEA);
 	i2c_timer = I2C_TIMER_DELAY;
 	while(!(TWCR & (1<<TWINT)) && i2c_timer--);
 	if(i2c_timer == 0)
-		return 0;
+		return 1;
 
-    return TWDR;
+	temp = TWDR;
+    *dest = temp;
 
+    return 0;
 }/* i2c_readAck */
 
 
@@ -226,16 +229,19 @@ unsigned char i2c_readAck(void)
  
  Return:  byte read from I2C device
 *************************************************************************/
-unsigned char i2c_readNak(void)
+unsigned char i2c_readNak(byte* dest)
 {
 	uint32_t  i2c_timer = 0;
+	byte temp;
 
 	TWCR = (1<<TWINT) | (1<<TWEN);
 	i2c_timer = I2C_TIMER_DELAY;
 	while(!(TWCR & (1<<TWINT)) && i2c_timer--);
 	if(i2c_timer == 0)
-		return 0;
+		return 1;
 	
-    return TWDR;
+	temp = TWDR;
+    *dest = temp;
 
+    return 0;
 }/* i2c_readNak */

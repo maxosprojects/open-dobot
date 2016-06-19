@@ -434,6 +434,10 @@ int main() {
         }
       // If nothing left in the queue then send STOP.
       } else if (cmdQueue.isEmpty()) {
+          // A safety net - the laser should not be left on when there are no commands
+          // in the queue. This would be an indication that the user forgot to turn
+          // it off or something happened with the comms or with the program.
+          laserOff();
           // writeSpi((Command*) &sequenceRest[1]);
           writeSpiRest();
       // Some command is waiting to be processed.

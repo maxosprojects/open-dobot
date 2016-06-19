@@ -31,19 +31,19 @@ This project is intended as a completely open and free (MIT License) alternative
 ---
 
 # <a name="why"></a> Why? ...or the original firmware problems
-The need for this project arisen due to the original claim on Kickstarter to make the arm "Open-source" and "Arduino-based", which has been mostly unsatisfied.
-The "openness" ends with the protocol that is used to send commands to the arm (and recently the same protocol in form of some questionable API). The "Arduino-based" claim brings absolutely no value to the owner as it does not drive the arm but sends commands further to the top board via SPI. The top board has FPGA that controls the three stepper drivers and two servos (PWM signals).
+The need for this project arisen due to the original claim on Kickstarter to make the arm "open-source" and "Arduino-based", which has been mostly unsatisfied.
+The "openness" ends with the protocol that is used to send commands to the arm (and recently the same protocol in form of some questionable API). The "Arduino-based" claim brings absolutely no value to the owner as it does not drive the arm but sends commands further to the top board (kind of Arduino shield) via SPI. The top board has FPGA that controls the three stepper drivers and two servos (PWM signals). No information on FPGA and how it functions has been released. The SPI protocol to control FPGA board has been reverse-engineered and open-dobot supports that board, however, the board is not extendable and RAMPS is preferred for many reasons.
 
 ### Protocol
 The issues with the original protocol the Dobot team has released are all in the proprietary firmware, which renders the protocol useless:
-- the firmware drops commands randomly (seems to fixed at expense of command rate - 256kbaud down to 9.6kbaud)
+- the firmware drops commands randomly (seems to be fixed at expense of command rate - 256kbaud down to 9.6kbaud)
 - provides no acknowledgement of commands being received or feedback on the reasons why they are dropped
 - no command buffer and no indication of command being completed, which introduces unnecessary complexity to the application software
 - too high-level with too little features - the firmware implements forward and inverse kinematics, but, of course, no trajectory planning, which puts it into the "toy" category
 - absurd - 3d printing (one of the claims on the kickstarter campaign)... sigh, relative accuracy (not 0.2mm for sure and only under specific conditions) can be achieved only at extremely low velocities... it is a torture to look at... a cheap 3d printer would do much better job and much quicker
 
 ### <a name="arduino-joke"></a> The "Arduino-based" joke
-The fact that the Arduino board does not actually control the arm but delegates the control function to the FPGA using a proprietary protocol, brings no value of having Arduino at all. It could in fact be as well any other hardware - we don't get control over the arm either way.
+The fact that the Arduino board does not actually control the arm but delegates the control function to the FPGA using a proprietary protocol, brings no value of having Arduino at all. It could in fact be as well any other hardware - we don't get full control over the robot either way.
 
 ---
 
@@ -54,8 +54,8 @@ There are two parts:
 1. The one that drives the arm (stepper motors, servos, pump, valve, laser) - Control Box
 2. The one that drives Control Box - a computer with a USB port
 
-Original _Control Box_ is composed of of two boards: Arduino and a board hosting FPGA chip (the one that actually drives everything).
-Given the hard limitations to extend any functionality with FPGA board open-dobot since version 1.2 also supports **[RAMPS v1.4](http://reprap.org/wiki/RAMPS_1.4)** as a replacement for FPGA board. **RAMPS** is a cheacp board (around $10) and removes any dependencies on and limitations of the FPGA board.
+Original _Control Box_ is composed of two boards: Arduino and a board hosting FPGA chip (the one that actually drives everything).
+Given the hard limitations to extend any functionality with FPGA board open-dobot since version 1.2 also supports **[RAMPS v1.4](http://reprap.org/wiki/RAMPS_1.4)** as a replacement for FPGA board. **RAMPS** is a cheap board (around $10) and removes any dependencies on and limitations of the FPGA board.
 
 To drive RAMPS or FPGA board almost any computer can be used, including **Rapberry Pi**.
 
@@ -69,27 +69,35 @@ Any platform where Python can run is supported. Tested on the following:
 ---
 
 # Features implemented so far
-- direct control over the FPGA/RAMPS board from application level (DobotDriver.py)
+- direct control over the FPGA/RAMPS board from application level (DobotDriver.py, DobotSDK.py)
 - reliable and fast communication to the host system via USB
 - command buffering (queueing) in firmware (in Arduino) for smooth, non-jerky moves
 - move each joint stepper motor by specified number of steps, in specified direction and at specified speed
 - 100% accurate moves in steps
-- limit switch/photointerrupter support with calibration routing implemented in firmware and controlled from application level (DobotDriver.py, DobotSDK.py) by selecting any of the unused Arduino pins dynamically
+- limit switch/photointerrupter support with calibration routine implemented in firmware and controlled from application level (DobotDriver.py, DobotSDK.py) by selecting any of the unused Arduino pins dynamically
 - accurate and fast Inverse Kinematics
 - 100% accurate step number tracking in SDK and in firmware
-- accurate (to the best of Dobot's mechanical design) moves in cartesian coordinates (x,y,z) in a straight line from current location to the specified location
+- accurate (to the best of Dobot's mechanical design) moves in cartesian coordinates (x,y,z) in a straight line from current location to the specified location. There is a flaw in mechanical design - terrible backlash in joints and motor reduction gears
 - laser on/off with correct queueing
 - pump and valve on/off with correct queueing
 - smooth moves with acceleration/deceleration
 - gripper control
 - ```wait``` command to introduce a delay in the movement/manipulation sequence if needed
+- support for MPU-6050 accelerometer units (GY-521 module) in RAMPS version
 
 ---
 
 # Prerequisites
-You will only need:
+For FPGA v1.0 board you will only need:
 - [DobotTools](http://dobot.cc/download.php) or avrdude directly (included in Arduino IDE) to flash _open-dobot_ firmware
 - [Python](https://www.python.org) to run application software and examples (see [Installation](#installation))
+
+FPGA v1.1 board is based on unknown crap accelerometers (MP65) that sit on SPI bus. Those are not supported.
+Preferred alternative is to switch to RAMPS v1.4 board and use GY-521 modules.
+
+Some other solutions to the accelerometers problem:
+- use limit switches/photointerrupters to calibrate all joints
+- request support for GY-521 modules in FPGA version and solder those modules to the Arduino pins exposed on the FPGA board
 
 ---
 
@@ -123,7 +131,7 @@ Using original [DobotTools](http://dobot.cc/download.php) or [avrdude](http://ww
 Alternatively, you can compile and flash the firmware yourself on a \*nix machine using a simple build script firmware/upload/upload*.sh that refers to avrdude already installed with Arduino IDE.
 
 # Usage
-In application/python/ folder you may find the calibration-tool.py to find the offsets of the accelerometers installed on your dobot. Every accelerometer is soldered at a slight angle, which needs to be accounted for when performing calculations. Although that angle is very small, at longer distances (when the arm is stretched) is might come in the way of holding XY plane.
+In application/python/ folder you may find the calibrate-accelerometers.py to find the offsets of the accelerometers installed on your dobot. Every accelerometer is soldered at a slight angle, which needs to be accounted for when performing calculations. Although that angle is very small, at longer distances (when the arm is stretched) is might come in the way of holding XY plane.
 However, as it is explained in [issue #19](https://github.com/maxosprojects/open-dobot/issues/19), the accelerometers themselves have a significant sensing error and the calibration may be skipped altogether given the accelerometers on your Dobot are not terribly poorly soldered (about one degree inclination relative to the PCB the accelerometer is soldered to will be fine).
 
 In the same folder you may find some examples that use the driver directly, SDK and more. Read the descriptions in those examples before executing.

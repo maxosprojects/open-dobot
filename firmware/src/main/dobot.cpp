@@ -187,6 +187,7 @@ byte cmdGetAccels() {
   if (!checkCrc(cmd, 1)) {
     return 2;
   }
+  updateAccels();
   writes222222(cmd, &accelRearX, &accelRearY, &accelRearZ, &accelFrontX, &accelFrontY, &accelFrontZ);
   return 3;
 }

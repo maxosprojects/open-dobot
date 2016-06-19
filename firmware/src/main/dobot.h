@@ -135,5 +135,6 @@ void pumpOn();
 void pumpOff();
 void valveOn();
 void valveOff();
+void updateAccels();
 
 #endif // DOBOT_H_INCLUDED

@@ -4,7 +4,7 @@ An example how to use gripper.
 
 '''
 
-from DobotSDK import Dobot
+from dobot import Dobot
 import time
 
 # The top Z to go to.
@@ -22,7 +22,8 @@ dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
 
 # Enable calibration routine if you have a limit switch/photointerrupter installed on the arm.
 # See example-switch.py for details.
-# Take the tool to a safe haight.
+# Take the tool to a safe height.
+
 # dobot.MoveWithSpeed(260.0, 0.0, up, speed, acceleration)
 # time.sleep(2)
 # dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 1, 5, 1, 0)

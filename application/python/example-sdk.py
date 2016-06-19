@@ -17,28 +17,30 @@ to execute until the queue (200 commands) is empty.
 
 '''
 
-from DobotSDK import Dobot
+from dobot import Dobot
 import time
 
 # The top Z to go to.
 up = 50
 # The bottom Z to go to.
-down = 39
+down = 50
 # Maximum speed in mm/s
-speed = 700
+speed = 400
 # Acceleration in mm/s^2
-acceleration = 400
+acceleration = 300
 
 # dobot = Dobot('/dev/tty.usbmodem1421', debug=True, fake=True)
 # dobot = Dobot('COM4', debug=True)
 dobot = Dobot('/dev/tty.usbmodem1421', debug=True)
-# dobot = Dobot('/dev/tty.BT4-SPP-SerialPort', debug=True, timeout=0.3)
 
 # Enable calibration routine if you have a limit switch/photointerrupter installed on the arm.
 # See example-switch.py for details.
 # Move both arms to approximately 45 degrees.
+# Re-initialize accelerometers at approx. 45 degrees for the best result. Available on RAMPS only.
+
 # dobot.MoveWithSpeed(260.0, 0.0, 85, 700, acceleration)
 # time.sleep(2)
+# dobot.InitializeAccelerometers()
 # dobot.CalibrateJoint(1, dobot.freqToCmdVal(2000), dobot.freqToCmdVal(50), 1, 5, 1, 0)
 
 # Line

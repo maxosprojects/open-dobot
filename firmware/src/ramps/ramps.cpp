@@ -30,7 +30,6 @@ volatile int ticksLeftX;
 volatile int ticksLeftY;
 volatile int ticksLeftZ;
 
-
 SwitchPort calibrationPins[] = {
   {
     // D16 - reference 0
@@ -168,31 +167,41 @@ void valveOff() {
   VALVE_PORT &= ~(1<<VALVE_PIN);
 }
 
-void accelRead(byte unit, int *x, int *y, int *z) {
-  long resultX = 0;
-  long resultY = 0;
-  long resultZ = 0;
-  int ax, ay, az;
-  byte i = 20;
-
+void setupAccels() {
+  // The following initializes I2C and MPU-6050 units.
+  // The approach seems to be working reliably when there is no interference from motors.
+  // See wiki on how to suppress interference.
+  byte i = 5;
   while (i--) {
-    mpu6050_getRawAccels(unit, &ax, &ay, &az);
-    resultX += ax;
-    resultY += ay;
-    resultZ += az;
+    mpu6050_deinit();
+    _delay_ms(5);
+    mpu6050_init(MPU6050_ADDR0);
+    _delay_ms(5);
+    mpu6050_init(MPU6050_ADDR1);
+    _delay_ms(5);
+    if (mpu6050_testConnection(MPU6050_ADDR0) && mpu6050_testConnection(MPU6050_ADDR1)) {
+      break;
+    }
   }
-  *x = resultX / 20;
-  *y = resultY / 20;
-  *z = resultZ / 20;
 }
 
-void switchToAccelReportMode() {
-  while (1) {
-    accelRead(MPU6050_ADDR0, &accelRearX, &accelRearY, &accelRearZ);
-    processSerialBuffer();
-    accelRead(MPU6050_ADDR1, &accelFrontX, &accelFrontY, &accelFrontZ);
-    processSerialBuffer();
+void accelRead(byte unit, int *x, int *y, int *z) {
+  int ax, ay, az;
+  byte ret = 1;
+  while (ret) {
+    ret = mpu6050_getRawAccels(unit, &ax, &ay, &az);
+    if (ret) {
+      setupAccels();
+    }
   }
+  *x = ax;
+  *y = ay;
+  *z = az;
+}
+
+void updateAccels() {
+  accelRead(MPU6050_ADDR0, &accelRearX, &accelRearY, &accelRearZ);
+  accelRead(MPU6050_ADDR1, &accelFrontX, &accelFrontY, &accelFrontZ);
 }
 
 inline void setupPwm() {
@@ -251,31 +260,7 @@ void setupBoard() {
 
   setupPwm();
 
-  // Enable internal pullup on accelerometer reporting mode pin.
-  ACCEL_SWITCH_PORT |= (1<<ACCEL_SWITCH_PIN);
-
-  // The following initializes I2C and MPU-6050 units.
-  // The approach seems to be working reliably.
-  byte i = 5;
-  while (i--) {
-    mpu6050_init(MPU6050_ADDR0);
-    _delay_ms(50);
-    mpu6050_init(MPU6050_ADDR1);
-    _delay_ms(50);
-    if (mpu6050_testConnection(MPU6050_ADDR0) && mpu6050_testConnection(MPU6050_ADDR1)) {
-      break;
-    } else {
-      mpu6050_deinit();
-    }
-  }
-
-  if (! (ACCEL_SWITCH_PORTIN & (1<<ACCEL_SWITCH_PIN))) {
-    accelReportMode = 1;
-    switchToAccelReportMode();
-  }
-
-  accelRead(MPU6050_ADDR0, &accelRearX, &accelRearY, &accelRearZ);
-  accelRead(MPU6050_ADDR1, &accelFrontX, &accelFrontY, &accelFrontZ);
+  setupAccels();
 
   /**
    * Set up TIMER1_COMPA_vect ISR to execute commands.
@@ -448,7 +433,14 @@ int main() {
       // After 50Hz has been executed peek at the queue to see if there is another
       // non-movement command is waiting next and execute it. Do until a
       // movement command is next or no commands left in the queue.
-      while (!cmdQueue.isEmpty()) {
+      while (1) {
+        if (cmdQueue.isEmpty()) {
+          // A safety net - the laser should not be left on when there are no commands
+          // in the queue. This would be an indication that the user forgot to turn
+          // it off or something happened with the comms or with the program.
+          laserOff();
+          break;
+        }
         Command* command = cmdQueue.peekTail();
         if (command->type == Move) {
           break;

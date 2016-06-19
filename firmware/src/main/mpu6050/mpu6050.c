@@ -37,19 +37,38 @@ volatile uint8_t buffer[14];
 int8_t mpu6050_readBytes(byte unit, uint8_t regAddr, uint8_t length, uint8_t *data) {
 	uint8_t i = 0;
 	int8_t count = 0;
+    byte temp;
 	if(length > 0) {
 		//request register
-		i2c_start(unit | I2C_WRITE);
-		i2c_write(regAddr);
+        if (i2c_start(unit | I2C_WRITE)) {
+            return 0;
+        }
+        // i2c_start(unit | I2C_WRITE);
+        if (i2c_write(regAddr)) {
+            return 0;
+        }
+        // i2c_write(regAddr);
 		_delay_us(10);
 		//read data
-		i2c_start(unit | I2C_READ);
+        if (i2c_start(unit | I2C_READ)) {
+            return 0;
+        }
+        // i2c_start(unit | I2C_READ);
 		for(i=0; i<length; i++) {
 			count++;
-			if(i==length-1)
-				data[i] = i2c_readNak();
-			else
-				data[i] = i2c_readAck();
+			if(i==length-1) {
+                if (i2c_readNak(&temp)) {
+                    return 0;
+                }
+                data[i] = temp;
+                // i2c_readNak(&data[i]);
+            } else {
+                if (i2c_readAck(&temp)) {
+                    return 0;
+                }
+                data[i] = temp;
+                // i2c_readAck(&data[i]);
+            }
 		}
 		i2c_stop();
 	}
@@ -450,7 +469,8 @@ void mpu6050_setSleepEnabled(byte unit) {
  * test connectino to chip
  */
 uint8_t mpu6050_testConnection(byte unit) {
-	mpu6050_readBits(unit, MPU6050_RA_WHO_AM_I, MPU6050_WHO_AM_I_BIT, MPU6050_WHO_AM_I_LENGTH, (uint8_t *)buffer);
+	buffer[0] = 0;
+    mpu6050_readBits(unit, MPU6050_RA_WHO_AM_I, MPU6050_WHO_AM_I_BIT, MPU6050_WHO_AM_I_LENGTH, (uint8_t *)buffer);
 	if(buffer[0] == 0x34)
 		return 1;
 	else
@@ -515,12 +535,16 @@ void mpu6050_getRawData(byte unit, int16_t* ax, int16_t* ay, int16_t* az, int16_
 /*
  * get raw accelerometers data
  */
-void mpu6050_getRawAccels(byte unit, int16_t* ax, int16_t* ay, int16_t* az) {
-    mpu6050_readBytes(unit, MPU6050_RA_ACCEL_XOUT_H, 6, (uint8_t *)buffer);
+byte mpu6050_getRawAccels(byte unit, int16_t* ax, int16_t* ay, int16_t* az) {
+    if (mpu6050_readBytes(unit, MPU6050_RA_ACCEL_XOUT_H, 6, (uint8_t *)buffer) != 6) {
+        return 1;
+    }
 
     *ax = (((int16_t)buffer[0]) << 8) | buffer[1];
     *ay = (((int16_t)buffer[2]) << 8) | buffer[3];
     *az = (((int16_t)buffer[4]) << 8) | buffer[5];
+
+    return 0;
 }
 
 /*

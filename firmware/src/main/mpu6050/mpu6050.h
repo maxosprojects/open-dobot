@@ -124,7 +124,7 @@ extern void mpu6050_deinit();
 
 #if MPU6050_GETATTITUDE == 0
 extern void mpu6050_getRawData(byte unit, int16_t* ax, int16_t* ay, int16_t* az, int16_t* gx, int16_t* gy, int16_t* gz);
-extern void mpu6050_getRawAccels(byte unit, int16_t* ax, int16_t* ay, int16_t* az);
+extern byte mpu6050_getRawAccels(byte unit, int16_t* ax, int16_t* ay, int16_t* az);
 extern void mpu6050_getConvData(byte unit, double* axg, double* ayg, double* azg, double* gxds, double* gyds, double* gzds);
 #endif
 
