@@ -40,7 +40,7 @@ void Calibrator::start(byte newPin, byte control, ulong *fwdSpeed, ulong *backSp
     fwdCmd.control = (control & 0x04) >> (2 - joint);
     fwdCmd.servoGrab= gripper;
     fwdCmd.servoRot = toolRotation;
-    backCmd.control = (~control & 0x04) >> (5 - joint);
+    backCmd.control = (~control & 0x04) >> (2 - joint);
     backCmd.servoGrab= gripper;
     backCmd.servoRot = toolRotation;
     memset(&fwdCmd, 0, 12);
