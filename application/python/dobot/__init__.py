@@ -1,4 +1,4 @@
 
-from DobotDriver import DobotDriver
-from DobotSDK import Dobot
-from DobotKinematics import DobotKinematics
+from dobot.DobotDriver import DobotDriver
+from dobot.DobotSDK import Dobot
+from dobot.DobotKinematics import DobotKinematics

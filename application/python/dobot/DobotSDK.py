@@ -29,8 +29,8 @@ import serial
 import threading
 import time
 from serial import SerialException
-from DobotDriver import DobotDriver
-from DobotKinematics import *
+from dobot.DobotDriver import DobotDriver
+from dobot.DobotKinematics import *
 import timeit
 import math
 import sys

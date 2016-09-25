@@ -1,2 +1,2 @@
 
-from Getch import getch
+from getch.Getch import getch
