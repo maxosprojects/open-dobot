@@ -39,6 +39,7 @@ License: MIT
 #define CMD_PUMP_ON 10
 #define CMD_VALVE_ON 11
 #define CMD_BOARD_VERSION 12
+#define CMD_CALIBRATOR_STATUS 13
 // DO NOT FORGET TO UPDATE cmdArray SIZE!
 
 #define GET_MOTOR_DIRECTION(X) ((prevMotorDirections >> X) & 0x01)
@@ -112,6 +113,8 @@ byte cmdLaserOn();
 byte cmdPumpOn();
 byte cmdValveOn();
 byte cmdBoardVersion();
+byte cmdCalibratorStatus();
+
 void crcCcitt(byte data[], int len);
 void crcCcitt(byte data[], int len, byte keepSeed);
 byte read13(byte data[]);

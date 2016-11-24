@@ -26,7 +26,7 @@ License: MIT
 // #include "../ramps/ramps.h"
 // #endif
 
-funcPtrs cmdArray[13];
+funcPtrs cmdArray[14];
 // Last index in the commands pointers array.
 int cmdPtrArrayLastIndex;
 
@@ -75,6 +75,7 @@ void setup() {
   cmdArray[CMD_PUMP_ON] = cmdPumpOn;
   cmdArray[CMD_VALVE_ON] = cmdValveOn;
   cmdArray[CMD_BOARD_VERSION] = cmdBoardVersion;
+  cmdArray[CMD_CALIBRATOR_STATUS] = cmdCalibratorStatus;
   cmdPtrArrayLastIndex = sizeof(cmdArray) / sizeof(cmdArray[0]) - 1;
 
   implementationFunctions[LaserOn] = laserOn;
@@ -310,6 +311,29 @@ byte cmdExecQueue() {
   crcCcitt(cmd, 1);
   defer = 0;
   return 1;
+}
+
+// CMD: Return calibrator status 0:stopped, 1:unning, 2:backing
+byte cmdCalibratorStatus() {
+  // Check if not enough bytes yet.
+  if (cmdInBuffIndex < 3) {
+    return 1;
+  }
+  cmdInBuffIndex = 0;
+  if (!checkCrc(cmd, 1)) {
+    return 2;
+  }
+  
+  if(calibrator.isRunning())
+	cmd[0] = 1;
+  else if(calibrator.isBacking())
+	cmd[0] = 2;
+  else
+	cmd[0] = 0;
+  
+  // Return calibrator status.
+  write1(cmd);
+  return 3;
 }
 
 void serialInit(void) {
