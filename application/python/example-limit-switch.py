@@ -27,3 +27,4 @@ driver.Open()
 # resistor, e.g. 4.7k, to 5V supply) or be an active device (like a photointerrupter). Pullup is not enabled on that pin.
 
 driver.CalibrateJoint(1, driver.freqToCmdVal(1000), driver.freqToCmdVal(50), 1, 5, 1, 0)
+
